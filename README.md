@@ -296,6 +296,16 @@ sizes.
   server.
 - No end-to-end browser suite (Playwright) is included; the flows above were
   driven manually instead.
+- **One transient miss observed.** On the very first interaction after a brand
+  new deployment — while the service worker was installing and precaching — a
+  manual check-in reached the server and was recorded, but the verdict band did
+  not render. It did not recur on any subsequent scan, on a fresh page load, or
+  after a reload, so it is tied to the one-off service-worker install rather
+  than to the scan path. It degrades safely: the scan is in the database with
+  its `scanId`, and rescanning the ticket returns *Already in* with the gate and
+  time rather than silently admitting twice. Worth a proper repro before a
+  large event; the practical workaround is to load the scanner once before
+  doors open, which an operator does anyway to cache the offline list.
 
 ## Offline operation and its limits
 

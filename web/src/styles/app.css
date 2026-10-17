@@ -184,5 +184,7 @@
 
 .hbar { display: grid; grid-template-columns: 120px 1fr 48px; gap: var(--s3); align-items: center; padding-block: var(--s2); }
 .hbar__track { height: 14px; background: var(--paper); border: 1px solid var(--ink); }
-.hbar__fill { height: 100%; background: var(--carbon); }
+/* Both are spans, so the fill needs to be blockified or its width and height
+   are ignored and the bar renders as an empty outline. */
+.hbar__fill { display: block; height: 100%; background: var(--carbon); }
 .hbar__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-sm); text-align: right; }
