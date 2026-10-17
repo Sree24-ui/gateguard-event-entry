@@ -18,6 +18,9 @@ export default async function handler(req, res) {
     await ready;
   } catch (err) {
     ready = null;
+    // The client gets a generic message; the cause belongs in the logs, or a
+    // failing deployment is undiagnosable.
+    console.error('[gateguard] database connection failed:', err?.message);
     res.statusCode = 503;
     res.setHeader('content-type', 'application/json');
     res.end(
