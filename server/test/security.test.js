@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { app, signedInOrganizer, createEvent, addAttendee, eventPayload, scanId } from './helpers.js';
+import {
+  app,
+  registerOrganizer,
+  signedInOrganizer,
+  createEvent,
+  addAttendee,
+  eventPayload,
+  scanId
+} from './helpers.js';
 
 describe('authorization', () => {
   it('blocks unauthenticated access to every protected route', async () => {
@@ -111,6 +119,42 @@ describe('authorization', () => {
       .get('/api/auth/me')
       .set('Cookie', ['gg_session=not.a.real.token']);
     expect(res.status).toBe(401);
+  });
+});
+
+describe('cross-origin handling', () => {
+  // Browsers attach Origin to every POST, same-origin ones included. Treating
+  // that as a disallowed origin broke every write from the deployed app.
+  it('accepts a same-origin write, where Origin matches Host', async () => {
+    const { email } = await registerOrganizer();
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Host', 'gateguard.example.com')
+      .set('Origin', 'https://gateguard.example.com')
+      .send({ email, password: 'super-secret-1' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.email).toBe(email);
+  });
+
+  it('refuses a foreign origin without CORS headers, and never with a 500', async () => {
+    const { email } = await registerOrganizer();
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Host', 'gateguard.example.com')
+      .set('Origin', 'https://attacker.example.com')
+      .send({ email, password: 'super-secret-1' });
+
+    // The browser is what blocks the read, via the missing header.
+    expect(res.status).not.toBe(500);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('allows a non-browser caller that sends no Origin', async () => {
+    const res = await request(app).get('/api/health');
+    expect(res.status).toBe(200);
   });
 });
 

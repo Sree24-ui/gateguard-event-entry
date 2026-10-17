@@ -30,15 +30,26 @@ export function createApp() {
     })
   );
 
+  // Browsers send an Origin header on every POST, including same-origin ones,
+  // so this has to recognise its own host or it rejects the app's own writes.
+  // A disallowed origin gets a response without CORS headers — the browser
+  // blocks it — rather than an error, which would surface as a 500.
   app.use(
-    cors({
-      origin(origin, callback) {
-        // Same-origin and non-browser callers send no Origin header.
-        if (!origin) return callback(null, true);
-        if (env.corsOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('Origin not allowed'));
-      },
-      credentials: true
+    cors((req, callback) => {
+      const origin = req.headers.origin;
+      if (!origin) return callback(null, { origin: true, credentials: true });
+
+      let sameOrigin = false;
+      try {
+        sameOrigin = new URL(origin).host === req.headers.host;
+      } catch {
+        sameOrigin = false;
+      }
+
+      if (sameOrigin || env.corsOrigins.includes(origin)) {
+        return callback(null, { origin: true, credentials: true });
+      }
+      return callback(null, { origin: false });
     })
   );
 
