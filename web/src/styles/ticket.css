@@ -1,0 +1,84 @@
+/* --- Attendee ticket: an industrial pass, not a gradient card ------------ */
+.ticket-page {
+  display: flex;
+  justify-content: center;
+  padding: var(--s6) var(--s4) var(--s9);
+}
+
+.pass {
+  width: 100%;
+  max-width: 380px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.pass__head {
+  background: var(--carbon);
+  color: var(--on-carbon);
+  padding: var(--s4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.pass__event { padding: var(--s4); border-bottom: 1px solid var(--rule); }
+.pass__event h1 { font-size: var(--text-h2); margin-bottom: var(--s2); }
+
+.pass__qr {
+  padding: var(--s5) var(--s4);
+  display: grid;
+  place-items: center;
+  gap: var(--s3);
+  background: var(--paper);
+}
+.pass__qr svg { border: 1px solid var(--rule); padding: var(--s3); background: #fff; }
+
+/* The perforation: a dashed rule with two bites taken out of the edges. */
+.pass__perf {
+  position: relative;
+  border-top: 1px dashed var(--ink);
+  height: 1px;
+}
+.pass__perf::before,
+.pass__perf::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  width: 15px;
+  height: 15px;
+  background: var(--canvas);
+  border: 1px solid var(--ink);
+  rotate: 45deg;
+}
+.pass__perf::before { left: -8px; }
+.pass__perf::after { right: -8px; }
+
+.pass__stub { padding: var(--s4); display: grid; gap: var(--s3); }
+.pass__row { display: flex; justify-content: space-between; gap: var(--s3); align-items: baseline; }
+.pass__row dt { font-family: var(--font-mono); font-size: var(--text-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.pass__row dd { font-size: var(--text-sm); text-align: right; }
+
+.pass__code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  word-break: break-all;
+  text-align: right;
+}
+
+.pass__actions { display: flex; gap: var(--s2); padding: var(--s4); border-top: 1px solid var(--rule); }
+.pass__actions .btn { flex: 1; }
+
+@media print {
+  .appbar, .pass__actions, .offline-strip, .toasts, .print-hide { display: none !important; }
+  body { background: #fff; }
+  .pass { border-color: #000; }
+}
+
+/* --- Public registration -------------------------------------------------- */
+.public-shell { max-width: 540px; margin-inline: auto; padding: var(--s6) var(--s4) var(--s9); }
+.public-head { border-bottom: 1px solid var(--ink); padding-bottom: var(--s4); margin-bottom: var(--s5); }
+.public-head h1 { margin-block: var(--s3) var(--s2); }
+.public-facts { display: grid; gap: var(--s2); margin-top: var(--s3); }
+.public-facts div { display: flex; align-items: center; gap: var(--s2); font-size: var(--text-sm); color: var(--ink-2); }

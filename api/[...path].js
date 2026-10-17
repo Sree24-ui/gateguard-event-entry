@@ -1,5 +1,6 @@
-// Vercel Function entrypoint. Every /api/* request is rewritten here by
-// vercel.json and handled by the same Express app used in local development.
+// Vercel Function entrypoint. The catch-all filename means every /api/*
+// request lands here with its original path intact, and is handled by the
+// same Express app that runs in local development.
 import { createApp } from '../server/src/app.js';
 import { connectDb } from '../server/src/db/connect.js';
 

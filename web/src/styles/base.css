@@ -1,0 +1,131 @@
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+* { margin: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
+}
+
+#root { min-height: 100dvh; display: flex; flex-direction: column; }
+
+h1, h2, h3, h4 {
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); letter-spacing: -0.01em; }
+h3 { font-size: var(--text-h3); letter-spacing: -0.005em; }
+
+p { text-wrap: pretty; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+a:hover { text-decoration: underline; }
+
+img, svg, video { display: block; max-width: 100%; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* One focus treatment everywhere: a square offset ring, never a glow. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.on-carbon :focus-visible,
+.carbon-band :focus-visible { outline-color: var(--volt); }
+
+::selection { background: var(--volt); color: var(--volt-ink); }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--s4);
+  top: -64px;
+  z-index: 100;
+  background: var(--carbon);
+  color: var(--on-carbon);
+  padding: var(--s3) var(--s4);
+  transition: top var(--dur) var(--ease);
+}
+
+.skip-link:focus { top: var(--s4); }
+
+/* --- The two primitives the whole layout is built from ------------------ */
+
+/* A page-width band. Bands stack and are separated by hairlines; this is
+   what replaces a grid of cards. */
+.band {
+  border-bottom: 1px solid var(--rule);
+}
+
+.band--carbon {
+  background: var(--carbon);
+  color: var(--on-carbon);
+  border-bottom-color: var(--rule-carbon);
+}
+
+.shell {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding-inline: var(--s5);
+}
+
+@media (max-width: 640px) {
+  .shell { padding-inline: var(--s4); }
+}
+
+/* --- Mono stamp: eyebrows, labels, metadata ----------------------------- */
+.stamp {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.stamp--ink { color: var(--ink); }
+.stamp--on-carbon { color: var(--on-carbon-2); }
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.muted { color: var(--ink-2); }
+.meta { color: var(--ink-3); font-size: var(--text-sm); }

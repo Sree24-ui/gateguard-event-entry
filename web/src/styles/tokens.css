@@ -1,0 +1,98 @@
+/* ===========================================================================
+   GateGuard design tokens
+
+   Direction: an industrial operations instrument, not a SaaS dashboard.
+   Researched from three Refero style references:
+     · teenage engineering  — primary. Near-white canvas, hairline rules that
+       organise content into ruled bands instead of cards, 0px radius on every
+       component, no shadows or gradients, colour never decorative.
+     · TWOTWO               — borrowed: voltage lime as the single chromatic
+       punch, used only as functional punctuation (primary action, ADMIT).
+       18.2:1 against black, which is what a gate in daylight needs.
+     · Vercel               — borrowed: monospace 11px uppercase stamping for
+       labels and metadata, tabular numerals for counters.
+   Deliberately rejected: indigo/violet, dark-by-default, card grids, drop
+   shadows, decorative gradients, editorial serif.
+   =========================================================================== */
+
+:root {
+  /* --- Surfaces ------------------------------------------------------- */
+  --canvas: #f6f8f7;        /* the dominant surface; everything sits on it */
+  --paper: #ffffff;         /* inputs and the one lifted surface per view   */
+  --carbon: #0f0e12;        /* inverted bands, the hard cut that is our only
+                               form of elevation                            */
+  --carbon-2: #1c1b20;      /* a step inside a carbon band                  */
+
+  /* --- Ink ------------------------------------------------------------ */
+  --ink: #000000;           /* primary text and structural rules            */
+  --ink-2: #44474a;         /* secondary text                               */
+  --ink-3: #6b6f73;         /* meta, captions, mono labels                  */
+  --ink-disabled: #83888b;
+  --on-carbon: #f6f8f7;
+  --on-carbon-2: #9ea3a7;
+
+  /* --- Rules (the structure of the whole interface) -------------------- */
+  --rule: #e0e3e2;          /* the hairline that does most of the work      */
+  --rule-2: #c9cdcc;        /* a heavier divider between major bands        */
+  --rule-ink: #000000;      /* a rule that is meant to be read as a line    */
+  --rule-field: #7f8588;    /* control borders, which must clear 3:1        */
+  --rule-carbon: #2e2d33;
+
+  /* --- The single accent, and the two signals that earn their place ----
+     volt   = primary action + ADMIT. Never a background, never decoration.
+     reject = refused entry only.
+     amber  = queued offline, awaiting server verification. Nothing else.   */
+  --volt: #e3fc03;          /* only ever a fill, with carbon text on it     */
+  --volt-ink: #0f0e12;
+  --reject: #c41f12;
+  --reject-soft: #fdeceb;
+  --amber: #845000;
+  --amber-soft: #fdf3e2;
+  --ok-soft: #f2f8dc;
+
+  /* --- Type ------------------------------------------------------------ */
+  --font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-display: 2.5rem;   /* 40px — TE caps display here, and so do we    */
+  --text-h1: 1.75rem;       /* 28 */
+  --text-h2: 1.1875rem;     /* 19 */
+  --text-h3: 1rem;          /* 16 */
+  --text-body: 0.875rem;    /* 14 */
+  --text-sm: 0.8125rem;     /* 13 — TE's floor for running copy             */
+  --text-label: 0.6875rem;  /* 11 — mono stamps only                        */
+
+  /* --- Space (4px grid) ------------------------------------------------ */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+
+  --page-max: 1280px;
+  --radius: 0;              /* non-negotiable: the system is straight cuts  */
+  --header-h: 56px;
+
+  --dur-fast: 90ms;
+  --dur: 150ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

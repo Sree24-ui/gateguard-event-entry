@@ -1,0 +1,89 @@
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.auth__panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--s7) clamp(var(--s5), 7vw, var(--s9));
+  max-width: 620px;
+  width: 100%;
+  margin-left: auto;
+}
+
+.auth__brand { align-self: flex-start; }
+.auth__brand:hover { text-decoration: none; }
+
+.form-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--reject);
+  background: var(--reject-soft);
+  color: var(--reject);
+  font-size: var(--text-sm);
+}
+
+.auth__demo {
+  margin-top: var(--s7);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
+}
+.auth__demo p { margin-top: var(--s2); line-height: 1.7; }
+.auth__demo code {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 1px 5px;
+}
+
+/* The right panel is a carbon band — the same hard cut used everywhere else. */
+.auth__aside {
+  background: var(--carbon);
+  color: var(--on-carbon);
+  display: flex;
+  align-items: center;
+  padding: var(--s9) clamp(var(--s5), 6vw, var(--s8));
+}
+
+.auth__aside-inner { max-width: 420px; }
+
+.auth__stat { display: flex; align-items: baseline; gap: var(--s3); margin-block: var(--s4) var(--s5); }
+.auth__stat b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 4rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--volt);
+}
+.auth__stat span { color: var(--on-carbon-2); font-size: var(--text-sm); }
+
+/* 84 ticks, one per attendee. The filled ones are through the gate. */
+.auth__ticks { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: var(--s5); }
+.auth__ticks i { width: 10px; height: 18px; background: #2e2d33; }
+.auth__ticks i[data-on] { background: var(--volt); }
+
+.auth__aside p { color: var(--on-carbon-2); font-size: var(--text-sm); }
+
+.auth__list { list-style: none; padding: 0; margin-top: var(--s4); }
+.auth__list li {
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--rule-carbon);
+  color: var(--on-carbon);
+  font-size: var(--text-h3);
+  font-weight: 300;
+}
+.auth__list li::before { content: '→'; color: var(--volt); margin-right: var(--s3); }
+
+@media (max-width: 900px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth__panel { margin-inline: auto; padding-block: var(--s6); }
+  .auth__aside { display: none; }
+}

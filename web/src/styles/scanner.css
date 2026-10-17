@@ -1,0 +1,257 @@
+/* ===========================================================================
+   Gate scanner. The one screen that is carbon by default: it frames a live
+   camera, is used outdoors, and must read at arm's length in one glance.
+   =========================================================================== */
+
+.scanner {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--header-h));
+  background: var(--carbon);
+  color: var(--on-carbon);
+}
+
+/* Phone-first tool. On a desktop it stays a single readable column rather
+   than stretching a viewfinder across 1400px. */
+@media (min-width: 820px) {
+  .scanner {
+    max-width: 680px;
+    margin-inline: auto;
+    border-inline: 1px solid var(--rule-carbon);
+  }
+}
+
+.scanner__head {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 20;
+  background: var(--carbon);
+}
+
+.scanner__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule-carbon);
+  flex-wrap: wrap;
+}
+
+.scanner__event { min-width: 0; flex: 1 1 180px; }
+.scanner__event b { display: block; font-weight: 500; letter-spacing: -0.01em; }
+
+/* On a phone the event name gets its own line rather than being squeezed
+   into two characters next to the gate picker. */
+@media (max-width: 600px) {
+  .scanner__bar { row-gap: var(--s3); }
+  .scanner__event { flex: 1 0 100%; }
+  .scanner__status { margin-left: 0; }
+  .scanner__gate { flex: 0 0 auto; }
+}
+
+.scanner__gate {
+  background: transparent;
+  border: 1px solid var(--rule-carbon);
+  color: var(--on-carbon);
+  min-height: 32px;
+  padding: 0 var(--s3);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.scanner__gate:hover { border-color: var(--on-carbon-2); }
+
+.scanner__status { display: flex; gap: var(--s2); margin-left: auto; flex-wrap: wrap; }
+
+/* --- Verdict: the single most important element in the product ----------- */
+.verdict {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s5) var(--s4);
+  border-bottom: 1px solid var(--carbon);
+  min-height: 132px;
+}
+
+.verdict--idle {
+  background: var(--carbon-2);
+  color: var(--on-carbon-2);
+  border-bottom-color: var(--rule-carbon);
+  grid-template-columns: minmax(0, 1fr);
+  text-align: center;
+  justify-items: center;
+}
+
+.verdict--admit { background: var(--volt); color: var(--volt-ink); }
+.verdict--reject { background: var(--reject); color: #fff; }
+.verdict--pending { background: var(--amber); color: #fff; }
+
+.verdict__word {
+  font-family: var(--font-mono);
+  font-size: clamp(1.75rem, 9vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.verdict__name {
+  font-size: var(--text-h2);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-top: var(--s1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verdict__why { font-size: var(--text-sm); margin-top: var(--s1); opacity: 0.85; }
+
+.verdict__icon { flex-shrink: 0; }
+
+/* A hard swap, not a fade: the operator must never see two states blended. */
+.verdict--flash { animation: verdict-in var(--dur-fast) steps(2, end); }
+@keyframes verdict-in { from { opacity: 0.35; } to { opacity: 1; } }
+
+/* --- Viewfinder ---------------------------------------------------------- */
+.viewfinder {
+  position: relative;
+  background: #000;
+  aspect-ratio: 4 / 3;
+  max-height: 38dvh;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.viewfinder video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.viewfinder__reticle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.viewfinder__reticle svg { width: min(58%, 220px); height: auto; color: var(--volt); opacity: 0.9; }
+
+.viewfinder__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  padding: var(--s5);
+  text-align: center;
+  color: var(--on-carbon-2);
+  background: var(--carbon-2);
+}
+.viewfinder__placeholder p { max-width: 42ch; font-size: var(--text-sm); }
+
+.viewfinder__busy {
+  position: absolute;
+  left: var(--s3);
+  top: var(--s3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--s2);
+  background: var(--carbon);
+  color: var(--volt);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --- Controls ------------------------------------------------------------ */
+.scanner__controls {
+  display: flex;
+  gap: var(--s2);
+  padding: var(--s4);
+  border-bottom: 1px solid var(--rule-carbon);
+  flex-wrap: wrap;
+}
+
+.scanner__controls .btn {
+  --btn-border: var(--rule-carbon);
+  --btn-fg: var(--on-carbon);
+}
+.scanner__controls .btn:hover:not(:disabled) { --btn-bg: var(--carbon-2); --btn-fg: var(--on-carbon); }
+.scanner__controls .btn--primary { --btn-border: var(--volt); }
+.scanner__controls .btn--primary:hover:not(:disabled) { --btn-bg: var(--carbon); --btn-fg: var(--volt); }
+.scanner__controls .btn:disabled { color: #5d6166; border-color: #2e2d33; }
+
+.manual {
+  display: flex;
+  gap: var(--s2);
+  padding: var(--s4);
+  border-bottom: 1px solid var(--rule-carbon);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.manual .field { flex: 1; min-width: 200px; }
+.manual .field > label { color: var(--on-carbon-2); }
+.manual .input {
+  background: var(--carbon-2);
+  border-color: var(--rule-carbon);
+  color: var(--on-carbon);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+.manual .input:hover, .manual .input:focus-visible { border-color: var(--volt); }
+.manual .input::placeholder { color: #5d6166; }
+
+/* --- Live counters on carbon --------------------------------------------- */
+.scanner__count {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--rule-carbon);
+}
+.scanner__count > div { padding: var(--s4); border-left: 1px solid var(--rule-carbon); }
+.scanner__count > div:first-child { border-left: 0; }
+.scanner__count b {
+  display: block;
+  margin-top: var(--s1);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.scanner__count .stamp { color: var(--on-carbon-2); }
+
+/* --- Recent scans on carbon ----------------------------------------------- */
+.scanner__recent { padding: var(--s4); }
+.scanner__recent .feed { border-top-color: var(--rule-carbon); }
+.scanner__recent .feed__row { border-bottom-color: var(--rule-carbon); }
+.scanner__recent .feed__time, .scanner__recent .feed__why { color: var(--on-carbon-2); }
+.scanner__recent .chip { background: transparent; border-color: var(--rule-carbon); color: var(--on-carbon-2); }
+.scanner__recent .chip--ok { border-color: var(--volt); color: var(--volt); background: transparent; }
+.scanner__recent .chip--reject { border-color: #ff6b5e; color: #ff6b5e; background: transparent; }
+.scanner__recent .chip--wait { border-color: #f0a830; color: #f0a830; background: transparent; }
+
+/* --- Pick-an-event screen -------------------------------------------------- */
+.pick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--rule);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border-left: 0; border-right: 0; border-top: 0;
+  cursor: pointer;
+}
+.pick-row:first-of-type { border-top: 1px solid var(--ink); }
+.pick-row:hover { background: #ebeeed; }
