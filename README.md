@@ -8,6 +8,9 @@ One signed QR ticket per attendee · a phone scanner that works at the gate ·
 a headcount the whole committee can trust · an offline queue that is honest
 about what it does and does not know.
 
+**[Live demo](https://gateguard-omega.vercel.app)** ·
+[API health](https://gateguard-omega.vercel.app/api/health)
+
 [Quick start](#quick-start) · [Architecture](#architecture) ·
 [Offline behaviour](#offline-operation-and-its-limits) · [API](docs/API.md) ·
 [Security](#security)
@@ -376,6 +379,9 @@ than an absent one.
 
 ## Deployment
 
+Live at **https://gateguard-omega.vercel.app** (health:
+[`/api/health`](https://gateguard-omega.vercel.app/api/health)).
+
 The app deploys as a single origin: static frontend plus the Express app as a
 serverless function under `/api`.
 
@@ -384,6 +390,9 @@ serverless function under `/api`.
 {
   "buildCommand": "npm run build",
   "outputDirectory": "web/dist",
+  // Vercel sets NODE_ENV=production for the build, which makes npm skip the
+  // devDependencies the build itself needs.
+  "installCommand": "npm install --include=dev",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
