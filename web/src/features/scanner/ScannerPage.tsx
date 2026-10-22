@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Camera, CameraOff, CheckCircle2, CloudOff, Keyboard, Loader2, RefreshCw,
-  ShieldX, Clock, Play, Square, Download
+  ShieldX, Clock, Play, Square, Download, ScanFace, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
 import type { EventStats, GateEvent } from '../../lib/types';
@@ -14,7 +14,7 @@ import { useCamera } from './useCamera';
 import { useGate, type GateResult } from './useGate';
 import { fmtTime } from '../../lib/format';
 
-const VERDICT_ICON = { admit: CheckCircle2, reject: ShieldX, pending: Clock };
+const VERDICT_ICON = { admit: CheckCircle2, reject: ShieldX, pending: Clock, review: ScanFace };
 
 export function ScannerPage() {
   const { eventId = '' } = useParams();
@@ -44,7 +44,10 @@ export function ScannerPage() {
     [queryClient]
   );
 
-  const { result, history, queued, manifest, syncing, busy, submit, sync, refreshManifest } = useGate({
+  const {
+    result, history, queued, manifest, syncing, busy, stalled,
+    submit, confirmFace, rejectFace, sync, refreshManifest
+  } = useGate({
     eventId,
     gate,
     online,
@@ -143,6 +146,11 @@ export function ScannerPage() {
             {online ? <span className="dot" aria-hidden /> : <CloudOff size={11} aria-hidden />}
             {online ? 'Online' : 'Offline'}
           </span>
+          {stalled && (
+            <span className="chip chip--reject" title="Automatic retries stopped">
+              Sync stalled
+            </span>
+          )}
           {queued.length > 0 && (
             <span className="chip chip--wait">
               {syncing ? <Loader2 size={11} className="spin" aria-hidden /> : <Clock size={11} aria-hidden />}
@@ -184,6 +192,37 @@ export function ScannerPage() {
         )}
       </div>
       </div>
+
+      {result?.verdict === 'review' && result.photo && (
+        <div className="face-review">
+          <img src={result.photo} alt={`Registration photo for ${result.name ?? 'this attendee'}`} />
+          <div className="face-review__ask">
+            <span className="stamp stamp--on-carbon">Does the person in front of you match?</span>
+            <div className="face-review__buttons">
+              <button
+                type="button"
+                className="btn btn--primary btn--lg"
+                onClick={() => confirmFace()}
+                disabled={busy}
+              >
+                <ThumbsUp size={17} aria-hidden /> Match — admit
+              </button>
+              <button
+                type="button"
+                className="btn btn--lg btn--danger"
+                onClick={() => rejectFace()}
+                disabled={busy}
+              >
+                <ThumbsDown size={17} aria-hidden /> Not them
+              </button>
+            </div>
+            <p className="face-review__note">
+              The ticket is not used up until you choose. “Not them” leaves it valid and sends
+              them to the desk.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="viewfinder">
         <video ref={camera.videoRef} muted playsInline aria-label="Camera preview" />

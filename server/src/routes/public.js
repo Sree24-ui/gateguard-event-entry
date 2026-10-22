@@ -47,6 +47,7 @@ router.get(
         endsAt: event.endsAt,
         status: event.status,
         publicRegistration: event.publicRegistration,
+        faceCheck: event.faceCheck,
         capacity: event.capacity,
         issued,
         spotsLeft: event.capacity > 0 ? Math.max(event.capacity - issued, 0) : null

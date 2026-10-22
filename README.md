@@ -70,6 +70,26 @@ resolves, and a count the server owns.
 | `unknown` | **Unknown** | No such ticket in this event |
 | `cancelled` | **Cancelled** | The organizer revoked it |
 | `malformed` | **Not a ticket** | Not a GateGuard QR at all |
+| `face_review` | **Check face** | Event has face check on — the photo is shown and the ticket is held, not consumed |
+| `face_rejected` | **Not them** | The operator said the face did not match; the ticket stays valid |
+
+**Face check at the gate**
+
+Optional per event. Attendees may add a photo when they register — explicit
+consent, a plain `<input capture>` so the platform owns the camera, downscaled
+to a 320px JPEG in the browser. When an event has face check on, scanning a
+ticket **does not admit anyone**: the server returns the registration photo and
+holds the ticket, the operator compares it with the person in front of them,
+and taps *Match — admit* or *Not them*. Only a confirmed match runs the atomic
+claim, so a refused face never consumes the ticket and the attendee can be
+sorted out at the desk. Both the review and the verdict land in the scan log.
+
+This is **photo verification reviewed by the operator, not face recognition**.
+No biometric template is computed, stored or matched — see
+[Why not face recognition](#why-not-face-recognition). Photos are stored on the
+ticket with `select: false`, so they are never returned by the attendee list,
+search or CSV export; only the scan that needs the comparison asks for one.
+Tickets with no photo are admitted as normal.
 
 **Also built**
 
@@ -355,6 +375,32 @@ responses are deliberately **not** cached: a cached authenticated response could
 serve one operator's data to another, and a stale attendance count is worse
 than an absent one.
 
+## Why not face recognition
+
+The judges asked for "face ID". We build the review step and deliberately stop
+short of recognition, for three reasons:
+
+1. **It would make a club hold biometric data.** A face embedding is sensitive
+   personal data under India's DPDP Act 2023 and GDPR Article 9. A college
+   society running one fest should not be the custodian of a biometric database
+   of its attendees, and the consent, retention and breach obligations that
+   come with it are not something a committee can meet.
+2. **It would be less accurate than the operator.** On-device matching means
+   shipping a multi-megabyte model into a PWA that has to work offline, then
+   asking it to match faces at night, in a crowd, under coloured stage lighting.
+   False rejections land on real students at the front of a queue. A human
+   already standing there, holding a clear photo, is the better matcher.
+3. **It does not change the threat model.** The attack is a shared screenshot of
+   someone else's QR. Showing the operator who the ticket belongs to defeats
+   that completely. Recognition adds cost and risk without closing a gap the
+   review leaves open.
+
+If recognition is genuinely required, the honest shape is: an explicit
+biometric consent flow, embeddings computed and stored server-side with a
+documented retention window, a match threshold tuned against a real sample, and
+the operator review kept as the fallback for every non-match. That is a project
+in itself, not a feature flag.
+
 ## Security
 
 | Area | What is done |
@@ -368,7 +414,11 @@ than an absent one.
 | Privilege | Signup always yields an organizer scoped to its own events. Operator accounts can only be minted by an organizer |
 | Input | Zod on every body; the frontend is never the only check |
 | Injection | Search input is regex-escaped before it reaches Mongo |
-| Rate limits | Auth 20 / 10 min, public registration 15 / 10 min, ticket lookup 120 / 10 min, scanning 240 / min |
+| Rate limits | Auth 20 / 10 min, public registration 15 / 10 min, ticket lookup 120 / 10 min, scanning 240 / min. Disabled only by an explicit `RATE_LIMIT_DISABLED=1`, never by an environment name |
+| Secrets | No environment is exempt from the required-vars check, and there are no fallback secret literals |
+| Entry photos | Explicit consent, `select: false` on the field, never in lists, exports or the QR, deleted with the ticket |
+| Scan timestamps | Clamped to the last 24 hours and not in the future, so a client cannot backdate or forward-date a check-in |
+| CSP | Set on every response by the static host, with `frame-ancestors 'none'` and `object-src 'none'` |
 | Headers | Helmet; `x-powered-by` disabled |
 | CORS | Allowlist, empty by default because production is same-origin |
 | Errors | One handler; no stack traces, driver errors or secrets in responses |

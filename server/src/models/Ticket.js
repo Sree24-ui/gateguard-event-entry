@@ -15,6 +15,15 @@ const ticketSchema = new mongoose.Schema(
       collegeId: { type: String, trim: true, maxlength: 64, default: '' }
     },
     status: { type: String, enum: ['valid', 'cancelled'], default: 'valid', index: true },
+    // Reference photo for gate verification. `select: false` keeps it out of
+    // every list and export query; only the scan path asks for it.
+    // ponytail: stored inline as a data URL — fine for a few hundred
+    // attendees, move to object storage if an event outgrows the document.
+    photo: {
+      data: { type: String, select: false },
+      capturedAt: { type: Date, default: null }
+    },
+    faceCheckedAt: { type: Date, default: null },
     source: {
       type: String,
       enum: ['organizer', 'public', 'import', 'demo'],
@@ -53,6 +62,8 @@ ticketSchema.methods.toPublic = function toPublic() {
     checkedInAt: this.checkedInAt,
     checkedInGate: this.checkedInGate,
     conflictCount: this.conflictCount,
+    hasPhoto: Boolean(this.photo?.capturedAt),
+    faceCheckedAt: this.faceCheckedAt,
     createdAt: this.createdAt
   };
 };

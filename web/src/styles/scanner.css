@@ -255,3 +255,32 @@
 }
 .pick-row:first-of-type { border-top: 1px solid var(--ink); }
 .pick-row:hover { background: #ebeeed; }
+
+/* --- Face review: the photo and the operator's two choices --------------- */
+.face-review {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--s4);
+  padding: var(--s4);
+  background: var(--carbon-2);
+  border-bottom: 1px solid var(--rule-carbon);
+}
+
+.face-review img {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border: 1px solid var(--volt);
+  background: #000;
+}
+
+.face-review__ask { display: flex; flex-direction: column; gap: var(--s3); }
+.face-review__buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.face-review__buttons .btn--danger { --btn-border: #ff6b5e; --btn-fg: #ff6b5e; }
+.face-review__buttons .btn--danger:hover:not(:disabled) { --btn-bg: var(--reject); --btn-fg: #fff; }
+.face-review__note { font-size: var(--text-sm); color: var(--on-carbon-2); }
+
+@media (max-width: 520px) {
+  .face-review { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .face-review__buttons { width: 100%; }
+}

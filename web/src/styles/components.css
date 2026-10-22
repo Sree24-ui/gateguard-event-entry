@@ -368,3 +368,13 @@
 .spread { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
 .grow { flex: 1; min-width: 0; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --- Registration photo ------------------------------------------------- */
+.photo-consent { align-items: flex-start; gap: var(--s3); cursor: pointer; }
+.photo-pick { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s3); }
+.photo-preview {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border: 1px solid var(--ink);
+}

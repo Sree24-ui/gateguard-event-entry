@@ -8,7 +8,9 @@ export const SCAN_OUTCOMES = [
   'wrong_event',
   'unknown',
   'cancelled',
-  'conflict'
+  'conflict',
+  'face_review',
+  'face_rejected'
 ];
 
 /**

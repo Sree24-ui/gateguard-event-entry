@@ -10,11 +10,19 @@ import { getEventStats } from '../services/stats.js';
 
 const router = express.Router({ mergeParams: true });
 
+// A downscaled JPEG from the registration form. Capped well under the 1mb
+// body limit; the client resizes to 320px before sending.
+export const photoSchema = z
+  .string()
+  .regex(/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/, 'That is not a usable photo')
+  .max(400_000, 'Photo is too large — retake it');
+
 export const attendeeSchema = z.object({
   name: z.string().trim().min(2, 'Enter the attendee name').max(120),
   email: z.string().trim().toLowerCase().email('Enter a valid email address').max(190),
   phone: z.string().trim().max(32).default(''),
-  collegeId: z.string().trim().max(64).default('')
+  collegeId: z.string().trim().max(64).default(''),
+  photo: photoSchema.optional()
 });
 
 const importSchema = z.object({
@@ -25,7 +33,8 @@ const importSchema = z.object({
  * Creates a ticket for an attendee. Rejects a second registration for the
  * same email on the same event, and enforces capacity server-side.
  */
-export async function issueTicket(event, attendee, source = 'organizer') {
+export async function issueTicket(event, attendeeInput, source = 'organizer') {
+  const { photo, ...attendee } = attendeeInput;
   if (event.capacity > 0) {
     const issued = await Ticket.countDocuments({ event: event._id, status: 'valid' });
     if (issued >= event.capacity) {
@@ -38,7 +47,8 @@ export async function issueTicket(event, attendee, source = 'organizer') {
       event: event._id,
       code: generateTicketCode(),
       attendee,
-      source
+      source,
+      photo: photo ? { data: photo, capturedAt: new Date() } : undefined
     });
     return ticket;
   } catch (err) {
@@ -168,6 +178,14 @@ router.post(
   wrap(async (req, res) => {
     const ticket = await Ticket.findOne({ _id: req.params.ticketId, event: req.event._id });
     if (!ticket) throw notFound('Ticket not found');
+    // Reissuing cleared checkedInAt, which rewound the headcount for someone
+    // already inside and left the scan log contradicting the stats.
+    if (ticket.checkedInAt) {
+      throw badRequest(
+        'That attendee is already checked in, so reissuing would undo their entry. ' +
+          'Cancel the ticket instead if you need to revoke it.'
+      );
+    }
 
     ticket.code = generateTicketCode();
     ticket.status = 'valid';

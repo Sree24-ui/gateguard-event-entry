@@ -23,7 +23,8 @@ const schema = z
       .regex(/^\d+$/, 'Use a whole number, or 0 for unlimited'),
     status: z.enum(['draft', 'published', 'live', 'closed']),
     gates: z.string().trim().min(1, 'Name at least one gate'),
-    publicRegistration: z.boolean()
+    publicRegistration: z.boolean(),
+    faceCheck: z.boolean()
   })
   .refine((values) => new Date(values.endsAt) > new Date(values.startsAt), {
     message: 'The event must end after it starts',
@@ -64,7 +65,8 @@ export function EventFormPage() {
       capacity: String(existing?.capacity ?? 0),
       status: existing?.status ?? 'published',
       gates: (existing?.gates ?? ['Main Gate']).join(', '),
-      publicRegistration: existing?.publicRegistration ?? true
+      publicRegistration: existing?.publicRegistration ?? true,
+      faceCheck: existing?.faceCheck ?? false
     }
   });
 
@@ -173,6 +175,17 @@ export function EventFormPage() {
             Allow anyone with the link to register
             <span className="field-hint" style={{ display: 'block' }}>
               Turn this off for invite-only events; you can still add attendees yourself.
+            </span>
+          </span>
+        </label>
+
+        <label className="row" style={{ gap: 'var(--s3)', cursor: 'pointer' }}>
+          <input type="checkbox" {...register('faceCheck')} />
+          <span>
+            Check faces at the gate
+            <span className="field-hint" style={{ display: 'block' }}>
+              Attendees may add a photo when registering. The operator compares it with the
+              person before admitting them; tickets without a photo are admitted as normal.
             </span>
           </span>
         </label>

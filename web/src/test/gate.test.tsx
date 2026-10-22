@@ -139,6 +139,65 @@ describe('useGate online', () => {
   });
 });
 
+describe('useGate face check', () => {
+  it('holds a review, keeps the payload, then admits on confirm', async () => {
+    let call = 0;
+    const { hook } = setup(true, () => {
+      call += 1;
+      return call === 1
+        ? {
+            status: 200,
+            body: {
+              result: {
+                ok: false,
+                outcome: 'face_review',
+                message: 'Compare the attendee with their registration photo',
+                attendeeName: 'Meera Nair',
+                photo: 'data:image/jpeg;base64,AAAA'
+              },
+              stats: STATS
+            }
+          }
+        : {
+            status: 200,
+            body: {
+              result: { ok: true, outcome: 'checked_in', message: 'Checked in', attendeeName: 'Meera Nair' },
+              stats: { ...STATS, checkedIn: 2 }
+            }
+          };
+    });
+
+    const payload = payloadFor(newCode());
+    await act(async () => {
+      await hook.result.current.submit(payload, 'camera');
+    });
+
+    expect(hook.result.current.result).toMatchObject({
+      verdict: 'review',
+      word: 'Check face',
+      name: 'Meera Nair',
+      photo: 'data:image/jpeg;base64,AAAA'
+    });
+    // The payload is kept so the confirm can resubmit it.
+    expect(hook.result.current.result?.pendingPayload).toBe(payload);
+
+    await act(async () => {
+      await hook.result.current.confirmFace();
+    });
+
+    expect(hook.result.current.result).toMatchObject({ verdict: 'admit', word: 'Admit' });
+  });
+
+  it('does nothing when there is no review pending', async () => {
+    const { hook, fetchSpy } = setup();
+    await act(async () => {
+      await hook.result.current.confirmFace();
+      await hook.result.current.rejectFace();
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
 describe('useGate offline', () => {
   it('queues a scan it cannot verify and labels it as awaiting the server', async () => {
     const { hook, fetchSpy } = setup(false);

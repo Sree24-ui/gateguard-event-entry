@@ -22,6 +22,9 @@ const eventSchema = new mongoose.Schema(
     },
     gates: { type: [String], default: ['Main Gate'] },
     publicRegistration: { type: Boolean, default: true },
+    // When on, a scanned ticket is held for the operator to compare the
+    // attendee against the photo taken at registration before admitting.
+    faceCheck: { type: Boolean, default: false },
     isDemo: { type: Boolean, default: false }
   },
   { timestamps: true }
@@ -41,6 +44,7 @@ eventSchema.methods.toPublic = function toPublic() {
     status: this.status,
     gates: this.gates,
     publicRegistration: this.publicRegistration,
+    faceCheck: this.faceCheck,
     isDemo: this.isDemo,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt

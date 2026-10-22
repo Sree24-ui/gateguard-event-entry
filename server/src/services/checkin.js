@@ -11,7 +11,9 @@ const MESSAGES = {
   malformed: 'Not a GateGuard ticket',
   wrong_event: 'Ticket belongs to a different event',
   unknown: 'Ticket not found',
-  cancelled: 'Ticket was cancelled'
+  cancelled: 'Ticket was cancelled',
+  face_review: 'Compare the attendee with their registration photo',
+  face_rejected: 'Operator reported the face did not match'
 };
 
 const OK_OUTCOMES = new Set(['checked_in']);
@@ -53,7 +55,11 @@ export async function processScan({
   mode = 'online',
   entry = 'camera',
   operator = null,
-  scannedAt = new Date()
+  scannedAt = new Date(),
+  // Set when the event has face check on. The ticket is then held, not
+  // claimed, until the operator confirms the person matches the photo.
+  requireFace = false,
+  faceConfirmed = false
 }) {
   const eventKey = String(eventId);
 
@@ -102,13 +108,31 @@ export async function processScan({
     return finish('wrong_event');
   }
 
-  const ticket = await Ticket.findOne({ code: parsed.code });
+  const ticket = await Ticket.findOne({ code: parsed.code }).select('+photo.data');
   if (!ticket) return finish('unknown');
   if (String(ticket.event) !== eventKey) {
     return finish('wrong_event', {}, { ticket });
   }
   if (ticket.status === 'cancelled') {
     return finish('cancelled', { attendeeName: ticket.attendee.name }, { ticket, attendeeName: ticket.attendee.name });
+  }
+
+  // Face check runs before the claim, so a refused face never consumes the
+  // ticket. Both the review and the operator's verdict are logged.
+  // With no photo on file there is nothing to compare, so the scan falls
+  // through and is admitted normally; the ticket's own hasPhoto flag is what
+  // tells the organizer no reference existed.
+  if (requireFace && !faceConfirmed && !ticket.checkedInAt && ticket.photo?.data) {
+    return finish(
+      'face_review',
+      {
+        attendeeName: ticket.attendee.name,
+        ticketId: ticket._id.toString(),
+        photo: ticket.photo.data,
+        photoCapturedAt: ticket.photo.capturedAt
+      },
+      { ticket, attendeeName: ticket.attendee.name }
+    );
   }
 
   // Atomic claim. Only the request that flips checkedInAt from null wins.
@@ -119,7 +143,8 @@ export async function processScan({
         checkedInAt: scannedAt,
         checkedInBy: operator?.id ?? null,
         checkedInGate: gate,
-        checkInScanId: scanId
+        checkInScanId: scanId,
+        ...(faceConfirmed ? { faceCheckedAt: new Date() } : {})
       }
     },
     { new: true }
@@ -158,6 +183,39 @@ export async function processScan({
     await Ticket.updateOne({ _id: current._id }, { $inc: { conflictCount: 1 } });
   }
   return outcomeResult;
+}
+
+/**
+ * Records an operator's "that is not them" verdict. The ticket is left valid
+ * and unclaimed: the attendee can be sorted out at the desk, and the organizer
+ * sees the refusal in the scan log.
+ */
+export async function recordFaceRejection({ eventId, code, scanId, gate, operator }) {
+  const existing = await ScanLog.findOne({ scanId });
+  if (existing) return result(existing.outcome, { replayed: true });
+
+  const ticket = await Ticket.findOne({ code, event: eventId });
+  const log = await ScanLog.create({
+    event: String(eventId),
+    ticket: ticket?._id ?? null,
+    scanId,
+    outcome: 'face_rejected',
+    mode: 'online',
+    entry: 'camera',
+    gate,
+    operator: operator?.id ?? null,
+    operatorName: operator?.name ?? '',
+    attendeeName: ticket?.attendee?.name ?? '',
+    codeFingerprint: fingerprintCode(code),
+    message: MESSAGES.face_rejected,
+    scannedAt: new Date()
+  });
+
+  return result('face_rejected', {
+    attendeeName: ticket?.attendee?.name ?? null,
+    scanId,
+    scan: log.toPublic()
+  });
 }
 
 /** Processes a queue of offline scans in submission order. */

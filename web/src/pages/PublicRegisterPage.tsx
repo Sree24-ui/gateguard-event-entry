@@ -10,6 +10,7 @@ import type { PublicEvent, Ticket } from '../lib/types';
 import { Wordmark } from '../components/Brand';
 import { PageLoader } from '../components/PageLoader';
 import { QrTicket } from '../components/QrTicket';
+import { PhotoField } from '../components/PhotoField';
 import { fmtDate, fmtTime } from '../lib/format';
 
 const schema = z.object({
@@ -25,6 +26,7 @@ export function PublicRegisterPage() {
   const { eventId = '' } = useParams();
   const [issued, setIssued] = useState<Ticket | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['public-event', eventId],
@@ -43,7 +45,10 @@ export function PublicRegisterPage() {
 
   const submit = useMutation({
     mutationFn: (values: Values) =>
-      api.post<{ ticket: Ticket }>(`/public/events/${eventId}/register`, values),
+      api.post<{ ticket: Ticket }>(`/public/events/${eventId}/register`, {
+        ...values,
+        ...(photo ? { photo } : {})
+      }),
     onSuccess: ({ ticket }) => setIssued(ticket),
     onError: (err) =>
       setFormError(err instanceof ApiError ? err.message : 'Could not complete your registration.')
@@ -189,6 +194,8 @@ export function PublicRegisterPage() {
               <input id="phone" className="input" type="tel" autoComplete="tel" {...register('phone')} />
             </div>
           </div>
+
+          {event.faceCheck && <PhotoField value={photo} onChange={setPhoto} />}
 
           <button
             type="submit"

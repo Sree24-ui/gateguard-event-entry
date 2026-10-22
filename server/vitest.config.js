@@ -3,6 +3,15 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
+    // Set here, not in setupFiles: ESM imports are hoisted, so assignments in
+    // a setup file run after config/env.js has already read the environment.
+    env: {
+      NODE_ENV: 'test',
+      JWT_SECRET: 'test-only-jwt-secret-not-used-anywhere-real',
+      TICKET_SECRET: 'test-only-ticket-secret-not-used-anywhere-real',
+      MONGODB_URI: 'mongodb://127.0.0.1:27017/gateguard_test_placeholder',
+      RATE_LIMIT_DISABLED: '1'
+    },
     globalSetup: './test/global-setup.js',
     setupFiles: ['./test/setup.js'],
     hookTimeout: 120000,

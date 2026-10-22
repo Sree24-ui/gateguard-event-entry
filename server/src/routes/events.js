@@ -22,7 +22,8 @@ const eventShape = z.object({
   capacity: z.coerce.number().int().min(0).max(1000000).default(0),
   status: z.enum(['draft', 'published', 'live', 'closed']).default('draft'),
   gates: z.array(z.string().trim().min(1).max(60)).min(1).max(20).default(['Main Gate']),
-  publicRegistration: z.boolean().default(true)
+  publicRegistration: z.boolean().default(true),
+  faceCheck: z.boolean().default(false)
 });
 
 const endsAfterStart = (data) =>

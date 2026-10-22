@@ -34,6 +34,7 @@ export interface GateEvent {
   status: EventStatus;
   gates: string[];
   publicRegistration: boolean;
+  faceCheck: boolean;
   isDemo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -57,6 +58,8 @@ export interface Ticket {
   checkedInAt: string | null;
   checkedInGate: string | null;
   conflictCount: number;
+  hasPhoto: boolean;
+  faceCheckedAt: string | null;
   createdAt: string;
   qrPayload?: string;
 }
@@ -69,7 +72,9 @@ export type ScanOutcome =
   | 'malformed'
   | 'wrong_event'
   | 'unknown'
-  | 'cancelled';
+  | 'cancelled'
+  | 'face_review'
+  | 'face_rejected';
 
 export interface ScanResult {
   ok: boolean;
@@ -82,6 +87,9 @@ export interface ScanResult {
   scanId?: string;
   replayed?: boolean;
   firstCheckIn?: { at: string | null; gate: string | null };
+  /** Present only on a face_review result, for the operator to compare. */
+  photo?: string;
+  photoCapturedAt?: string | null;
 }
 
 export interface ScanLogEntry {
@@ -135,6 +143,7 @@ export interface PublicEvent {
   endsAt: string;
   status: EventStatus;
   publicRegistration: boolean;
+  faceCheck: boolean;
   capacity: number;
   issued: number;
   spotsLeft: number | null;

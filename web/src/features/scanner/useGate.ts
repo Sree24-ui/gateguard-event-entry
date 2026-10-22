@@ -24,12 +24,20 @@ function unresolved(err: ApiError) {
   return err.offline || err.status === 0 || err.status >= 500 || err.status === 408 || err.status === 429;
 }
 
+/**
+ * How many times a queued scan is retried before the device stops on its own.
+ * `attempts` was recorded but never read, so a failing server was retried
+ * every 1.2s forever — and a 429 guaranteed it stayed rate limited.
+ */
+const MAX_SYNC_ATTEMPTS = 5;
+const RETRY_BASE_MS = 2000;
+
 /** Ignore the same code while it sits in front of the lens. */
 const SAME_CODE_COOLDOWN_MS = 4000;
 /** Never fire two lookups back to back, whatever is in frame. */
 const ANY_SCAN_COOLDOWN_MS = 900;
 
-export type Verdict = 'admit' | 'reject' | 'pending';
+export type Verdict = 'admit' | 'reject' | 'pending' | 'review';
 
 export interface GateResult {
   id: string;
@@ -40,6 +48,9 @@ export interface GateResult {
   outcome: ScanOutcome | 'queued' | 'duplicate_local';
   at: string;
   entry: 'camera' | 'manual';
+  /** Set on a face review: the registration photo and what to resubmit. */
+  photo?: string;
+  pendingPayload?: string;
 }
 
 const SERVER_COPY: Record<ScanOutcome, { verdict: Verdict; word: string }> = {
@@ -50,7 +61,9 @@ const SERVER_COPY: Record<ScanOutcome, { verdict: Verdict; word: string }> = {
   malformed: { verdict: 'reject', word: 'Not a ticket' },
   wrong_event: { verdict: 'reject', word: 'Wrong event' },
   unknown: { verdict: 'reject', word: 'Unknown' },
-  cancelled: { verdict: 'reject', word: 'Cancelled' }
+  cancelled: { verdict: 'reject', word: 'Cancelled' },
+  face_review: { verdict: 'review', word: 'Check face' },
+  face_rejected: { verdict: 'reject', word: 'Not them' }
 };
 
 function describe(result: ScanResult) {
@@ -263,7 +276,9 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
               why: describe(response.result),
               outcome: response.result.outcome,
               at: new Date().toISOString(),
-              entry
+              entry,
+              photo: response.result.photo,
+              pendingPayload: response.result.outcome === 'face_review' ? raw : undefined
             });
             return;
           } catch (err) {
@@ -353,23 +368,93 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
     [eventId, enqueue, manifest, online, onStats, record]
   );
 
-  // Drain the queue as soon as the connection is back.
+  /** The operator says the face matches: admit for real. */
+  const confirmFace = useCallback(async () => {
+    const pending = result?.pendingPayload;
+    if (!pending) return;
+    setBusy(true);
+    try {
+      const response = await api.post<{ result: ScanResult; stats: EventStats }>(
+        `/events/${eventId}/checkin`,
+        {
+          payload: pending,
+          scanId: newScanId(),
+          gate: gateRef.current,
+          entry: 'camera',
+          faceConfirmed: true
+        }
+      );
+      onStats(response.stats);
+      const copy = SERVER_COPY[response.result.outcome];
+      record({
+        id: response.result.scanId ?? newScanId(),
+        verdict: copy.verdict,
+        word: copy.word,
+        name: response.result.attendeeName ?? null,
+        why: describe(response.result),
+        outcome: response.result.outcome,
+        at: new Date().toISOString(),
+        entry: 'camera'
+      });
+    } finally {
+      setBusy(false);
+    }
+  }, [eventId, onStats, record, result]);
+
+  /** The operator says it is not them: log it, leave the ticket unused. */
+  const rejectFace = useCallback(async () => {
+    const pending = result?.pendingPayload;
+    if (!pending) return;
+    const parsed = parseScanPayload(pending);
+    if (!parsed.ok) return;
+    setBusy(true);
+    try {
+      const response = await api.post<{ result: ScanResult; stats: EventStats }>(
+        `/events/${eventId}/checkin/face-reject`,
+        { code: parsed.code, scanId: newScanId(), gate: gateRef.current }
+      );
+      onStats(response.stats);
+      record({
+        id: response.result.scanId ?? newScanId(),
+        verdict: 'reject',
+        word: 'Not them',
+        name: response.result.attendeeName ?? null,
+        why: 'Face did not match the registration photo — sent to the desk',
+        outcome: 'face_rejected',
+        at: new Date().toISOString(),
+        entry: 'camera'
+      });
+    } finally {
+      setBusy(false);
+    }
+  }, [eventId, onStats, record, result]);
+
+  // Drain the queue as soon as the connection is back, backing off as
+  // attempts accumulate and stopping once the cap is reached. A stalled queue
+  // is surfaced through `stalled` so the operator can retry deliberately.
+  const attempts = queued.reduce((most, scan) => Math.max(most, scan.attempts), 0);
+  const stalled = attempts >= MAX_SYNC_ATTEMPTS;
+
   useEffect(() => {
-    if (!online || !queued.length || syncing) return;
+    if (!online || !queued.length || syncing || stalled) return;
+    const delay = RETRY_BASE_MS * 2 ** attempts;
     const timer = window.setTimeout(() => {
       sync().catch(() => undefined);
-    }, 1200);
+    }, delay);
     return () => window.clearTimeout(timer);
-  }, [online, queued.length, syncing, sync]);
+  }, [online, queued.length, syncing, stalled, attempts, sync]);
 
   return {
     result,
     history,
     queued,
+    stalled,
     manifest,
     syncing,
     busy,
     submit,
+    confirmFace,
+    rejectFace,
     sync,
     refreshManifest,
     clearResult: () => setResult(null)

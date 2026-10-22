@@ -1,18 +1,18 @@
 import rateLimit from 'express-rate-limit';
-import { env } from '../config/env.js';
 
-/**
- * Shared limiter factory. Automated tests drive hundreds of requests through
- * one process, so limiting is skipped there; the production configuration is
- * exercised by hand (see README, "Rate limiting").
- */
+// Automated tests drive hundreds of requests through one process. This is an
+// explicit, single-purpose flag rather than a NODE_ENV check, so no ordinary
+// environment name can turn rate limiting off by accident.
+const DISABLED = process.env.RATE_LIMIT_DISABLED === '1';
+
+/** Shared limiter factory. */
 export function createLimiter({ windowMs, limit, message }) {
   return rateLimit({
     windowMs,
     limit,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
-    skip: () => env.nodeEnv === 'test',
+    skip: () => DISABLED,
     message: { error: { code: 'rate_limited', message } }
   });
 }
