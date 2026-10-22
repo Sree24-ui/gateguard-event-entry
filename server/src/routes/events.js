@@ -219,6 +219,8 @@ router.get(
         { label: 'Source', value: (t) => t.source },
         { label: 'Checked in at', value: (t) => t.checkedInAt },
         { label: 'Gate', value: (t) => t.checkedInGate },
+        { label: 'Face checked at', value: (t) => t.faceCheckedAt },
+        { label: 'Has entry photo', value: (t) => Boolean(t.photo?.capturedAt) },
         { label: 'Offline conflicts', value: (t) => t.conflictCount },
         { label: 'Registered at', value: (t) => t.createdAt }
       ],

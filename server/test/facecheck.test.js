@@ -108,6 +108,47 @@ describe('face check', () => {
   });
 });
 
+describe('face check and the offline queue', () => {
+  it('admits a queued scan but leaves it marked unverified', async () => {
+    const { agent } = await signedInOrganizer();
+    const event = await createEvent(agent, { faceCheck: true });
+    const { body } = await agent
+      .post(`/api/events/${event.id}/tickets`)
+      .send({ name: 'Queued Person', email: 'queued@test.dev', photo: PHOTO });
+
+    const sync = await agent.post(`/api/events/${event.id}/checkin/batch`).send({
+      gate: 'Main Gate',
+      scans: [{ payload: body.ticket.qrPayload, scanId: 'offline-face-1' }]
+    });
+
+    // Refusing entry because the wifi dropped would be worse, so it admits —
+    // but it must not claim the face was checked.
+    expect(sync.body.results[0].outcome).toBe('checked_in');
+    const list = await agent.get(`/api/events/${event.id}/tickets`);
+    expect(list.body.tickets[0].faceCheckedAt).toBeNull();
+
+    const scans = await agent.get(`/api/events/${event.id}/scans`);
+    expect(scans.body.scans[0].mode).toBe('offline_sync');
+  });
+
+  it('records faceCheckedAt when the operator did confirm', async () => {
+    const { agent } = await signedInOrganizer();
+    const event = await createEvent(agent, { faceCheck: true });
+    const { body } = await agent
+      .post(`/api/events/${event.id}/tickets`)
+      .send({ name: 'Verified Person', email: 'verified@test.dev', photo: PHOTO });
+
+    await scan(agent, event.id, {
+      payload: body.ticket.qrPayload,
+      scanId: scanId(),
+      faceConfirmed: true
+    });
+
+    const list = await agent.get(`/api/events/${event.id}/tickets`);
+    expect(list.body.tickets[0].faceCheckedAt).not.toBeNull();
+  });
+});
+
 describe('fixes', () => {
   it('refuses to reissue a ticket that is already checked in', async () => {
     const { agent } = await signedInOrganizer();

@@ -225,6 +225,12 @@ export async function processScanBatch(eventId, scans, context) {
     results.push(
       await processScan({
         eventId,
+        // A queued scan cannot be face-reviewed: the operator judged it hours
+        // ago with no photo on the device. Refusing entry because the wifi
+        // dropped is worse than admitting, so it is admitted and left with
+        // faceCheckedAt null — the scan log's offline_sync mode and that null
+        // are what tell the organizer which entries went unverified.
+        requireFace: false,
         raw: scan.payload,
         scanId: scan.scanId,
         gate: scan.gate || context.gate,

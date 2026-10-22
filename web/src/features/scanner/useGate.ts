@@ -66,6 +66,15 @@ const SERVER_COPY: Record<ScanOutcome, { verdict: Verdict; word: string }> = {
   face_rejected: { verdict: 'reject', word: 'Not them' }
 };
 
+/**
+ * Never index SERVER_COPY directly: an outcome a deployed bundle has not seen
+ * yet threw a TypeError, which fell through to the offline path and silently
+ * queued a scan the server had already decided.
+ */
+function copyFor(outcome: ScanOutcome) {
+  return SERVER_COPY[outcome] ?? { verdict: 'reject' as Verdict, word: 'Refused' };
+}
+
 function describe(result: ScanResult) {
   if (result.outcome === 'duplicate' || result.outcome === 'conflict') {
     const at = result.firstCheckIn?.at ? new Date(result.firstCheckIn.at) : null;
@@ -176,7 +185,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
         if (!current || current.outcome !== 'queued') return current;
         const resolved = response.results.find((item) => item.scanId === current.id);
         if (!resolved) return current;
-        const copy = SERVER_COPY[resolved.outcome];
+        const copy = copyFor(resolved.outcome);
         return {
           ...current,
           verdict: copy.verdict,
@@ -193,7 +202,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
           .map((item, index) => ({
             id: `${item.scanId ?? 'sync'}-${index}`,
             verdict: 'reject' as Verdict,
-            word: SERVER_COPY[item.outcome].word,
+            word: copyFor(item.outcome).word,
             name: item.attendeeName ?? null,
             why: `Resolved on sync — ${describe(item)}`,
             outcome: item.outcome,
@@ -267,7 +276,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
               { payload: raw, scanId: newScanId(), gate: gateRef.current, entry }
             );
             onStats(response.stats);
-            const copy = SERVER_COPY[response.result.outcome];
+            const copy = copyFor(response.result.outcome);
             record({
               id: response.result.scanId ?? newScanId(),
               verdict: copy.verdict,
@@ -289,7 +298,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
               const payload = err.body as { result?: ScanResult; stats?: EventStats } | undefined;
               if (payload?.result) {
                 if (payload.stats) onStats(payload.stats);
-                const copy = SERVER_COPY[payload.result.outcome];
+                const copy = copyFor(payload.result.outcome);
                 record({
                   id: payload.result.scanId ?? newScanId(),
                   verdict: copy.verdict,
@@ -385,7 +394,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
         }
       );
       onStats(response.stats);
-      const copy = SERVER_COPY[response.result.outcome];
+      const copy = copyFor(response.result.outcome);
       record({
         id: response.result.scanId ?? newScanId(),
         verdict: copy.verdict,
