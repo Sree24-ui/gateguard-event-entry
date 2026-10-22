@@ -150,6 +150,30 @@ describe('face check and the offline queue', () => {
 });
 
 describe('fixes', () => {
+  it('leaves untouched fields alone on a partial update', async () => {
+    const { agent } = await signedInOrganizer();
+    const event = await createEvent(agent, {
+      status: 'live',
+      gates: ['Main Gate', 'Side Gate', 'VIP Entry'],
+      capacity: 300,
+      publicRegistration: true,
+      faceCheck: true
+    });
+
+    // Changing one field must not reset every field that has a default.
+    const patched = await agent.patch(`/api/events/${event.id}`).send({ capacity: 400 });
+
+    expect(patched.status).toBe(200);
+    expect(patched.body.event).toMatchObject({
+      capacity: 400,
+      status: 'live',
+      gates: ['Main Gate', 'Side Gate', 'VIP Entry'],
+      publicRegistration: true,
+      faceCheck: true
+    });
+    expect(patched.body.event.name).toBe(event.name);
+  });
+
   it('refuses to reissue a ticket that is already checked in', async () => {
     const { agent } = await signedInOrganizer();
     const event = await createEvent(agent);

@@ -13,25 +13,43 @@ import { toCsv, sendCsv } from '../lib/csv.js';
 
 const router = express.Router();
 
-const eventShape = z.object({
+// Field schemas WITHOUT defaults. `.partial()` makes a key optional but Zod
+// still applies its default when the key is absent, so sharing a shape that
+// carries defaults meant a PATCH of one field silently reset every other one
+// — unpublishing a live event and wiping its gate list.
+const fields = {
   name: z.string().trim().min(3, 'Give the event a name').max(140),
-  description: z.string().trim().max(2000).default(''),
-  venue: z.string().trim().max(200).default(''),
+  description: z.string().trim().max(2000),
+  venue: z.string().trim().max(200),
   startsAt: z.coerce.date({ message: 'Pick a start date and time' }),
   endsAt: z.coerce.date({ message: 'Pick an end date and time' }),
-  capacity: z.coerce.number().int().min(0).max(1000000).default(0),
-  status: z.enum(['draft', 'published', 'live', 'closed']).default('draft'),
-  gates: z.array(z.string().trim().min(1).max(60)).min(1).max(20).default(['Main Gate']),
-  publicRegistration: z.boolean().default(true),
-  faceCheck: z.boolean().default(false)
+  capacity: z.coerce.number().int().min(0).max(1000000),
+  status: z.enum(['draft', 'published', 'live', 'closed']),
+  gates: z.array(z.string().trim().min(1).max(60)).min(1).max(20),
+  publicRegistration: z.boolean(),
+  faceCheck: z.boolean()
+};
+
+// Defaults belong to creation only.
+const createShape = z.object({
+  ...fields,
+  description: fields.description.default(''),
+  venue: fields.venue.default(''),
+  capacity: fields.capacity.default(0),
+  status: fields.status.default('draft'),
+  gates: fields.gates.default(['Main Gate']),
+  publicRegistration: fields.publicRegistration.default(true),
+  faceCheck: fields.faceCheck.default(false)
 });
+
+const updateShape = z.object(fields).partial();
 
 const endsAfterStart = (data) =>
   !data.startsAt || !data.endsAt || data.endsAt > data.startsAt;
 const dateOrder = { message: 'The event must end after it starts', path: ['endsAt'] };
 
-const createEventBody = eventShape.refine(endsAfterStart, dateOrder);
-const updateEventBody = eventShape.partial().refine(endsAfterStart, dateOrder);
+const createEventBody = createShape.refine(endsAfterStart, dateOrder);
+const updateEventBody = updateShape.refine(endsAfterStart, dateOrder);
 
 router.use(requireAuth);
 
