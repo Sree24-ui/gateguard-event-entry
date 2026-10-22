@@ -256,10 +256,16 @@
 .pick-row:first-of-type { border-top: 1px solid var(--ink); }
 .pick-row:hover { background: #ebeeed; }
 
+/* A review needs the photo and both buttons on screen at once, so the verdict
+   gives up its height while one is pending. */
+.scanner__head:has(.face-review) .verdict { min-height: 0; padding-block: var(--s3); }
+.scanner__head:has(.face-review) .verdict__word { font-size: clamp(1.25rem, 6vw, 1.75rem); }
+.scanner__head:has(.face-review) .verdict__why { display: none; }
+
 /* --- Face review: the photo and the operator's two choices --------------- */
 .face-review {
   display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
+  grid-template-columns: 116px minmax(0, 1fr);
   gap: var(--s4);
   padding: var(--s4);
   background: var(--carbon-2);
@@ -267,8 +273,8 @@
 }
 
 .face-review img {
-  width: 140px;
-  height: 140px;
+  width: 116px;
+  height: 116px;
   object-fit: cover;
   border: 1px solid var(--volt);
   background: #000;

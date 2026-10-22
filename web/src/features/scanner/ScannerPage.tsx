@@ -191,8 +191,6 @@ export function ScannerPage() {
           </div>
         )}
       </div>
-      </div>
-
       {result?.verdict === 'review' && result.photo && (
         <div className="face-review">
           <img src={result.photo} alt={`Registration photo for ${result.name ?? 'this attendee'}`} />
@@ -223,6 +221,8 @@ export function ScannerPage() {
           </div>
         </div>
       )}
+
+      </div>
 
       <div className="viewfinder">
         <video ref={camera.videoRef} muted playsInline aria-label="Camera preview" />
