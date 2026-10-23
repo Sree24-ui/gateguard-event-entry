@@ -13,6 +13,7 @@ import publicRoutes from './routes/public.js';
 import operatorRoutes from './routes/operators.js';
 import auditRoutes from './routes/audit.js';
 import attendeeRoutes from './routes/attendee.js';
+import adminRoutes from './routes/admin.js';
 
 export function createApp() {
   const app = express();
@@ -71,6 +72,7 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/public', publicRoutes);
   app.use('/api/attendee', attendeeRoutes);
+  app.use('/api/admin', adminRoutes);
   app.use('/api/operators', operatorRoutes);
   app.use('/api/audit', auditRoutes);
   app.use('/api/events/:eventId/tickets', ticketRoutes);

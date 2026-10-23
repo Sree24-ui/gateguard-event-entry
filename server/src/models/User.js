@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['organizer', 'operator', 'attendee'],
+      enum: ['admin', 'organizer', 'operator', 'attendee'],
       default: 'organizer',
       index: true
     },
@@ -30,6 +30,21 @@ const userSchema = new mongoose.Schema(
     // the events they were assigned to.
     organizer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     assignedEvents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }],
+    // Approval gates PUBLIC REACH, not the account. A pending organiser can
+    // create events, issue tickets and scan privately; only publishing to the
+    // world needs a human to vouch for them. Defaults to approved so operators,
+    // attendees and accounts that predate this all keep working; the signup
+    // route is what sets an organiser pending.
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'suspended'],
+      default: 'approved',
+      index: true
+    },
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvedAt: { type: Date, default: null },
+    suspendedReason: { type: String, default: '' },
+
     lastLoginAt: { type: Date, default: null },
 
     // One-time sign-in code. Stored hashed so a database read cannot be
@@ -62,6 +77,7 @@ userSchema.methods.toPublic = function toPublic() {
     name: this.name,
     email: this.email,
     role: this.role,
+    status: this.status || 'approved',
     assignedEvents: (this.assignedEvents || []).map((id) => id.toString()),
     hasPasskey: (this.passkeys || []).length > 0,
     createdAt: this.createdAt

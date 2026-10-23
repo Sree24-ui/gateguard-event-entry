@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, MapPin, Plus, Radio, Ticket as TicketIcon, ScanLine } from 'lucide-react';
+import {
+  CalendarDays, MapPin, Plus, Radio, Ticket as TicketIcon, ScanLine, Clock
+} from 'lucide-react';
 import { api } from '../lib/api';
 import type { GateEvent } from '../lib/types';
 import { useAuth } from '../hooks/useAuth';
@@ -58,6 +60,18 @@ export function DashboardPage() {
           </Link>
         )}
       </div>
+
+      {user?.status === 'pending' && (
+        <div className="pending-note" role="status">
+          <Clock size={16} aria-hidden />
+          <div>
+            <b>Your account is awaiting approval.</b> You can create events, add attendees and
+            test the scanner right now — everything works. What needs approval is publishing:
+            until an administrator approves you, your events stay drafts and their registration
+            pages are not public.
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="stack" style={{ gap: 'var(--s5)', borderTop: '1px solid var(--ink)', paddingTop: 'var(--s5)' }}>

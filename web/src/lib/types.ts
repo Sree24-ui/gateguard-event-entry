@@ -1,10 +1,12 @@
-export type Role = 'organizer' | 'operator' | 'attendee';
+export type Role = 'admin' | 'organizer' | 'operator' | 'attendee';
+export type AccountStatus = 'pending' | 'approved' | 'suspended';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: Role;
+  status: AccountStatus;
   assignedEvents: string[];
   hasPasskey: boolean;
   createdAt: string;

@@ -96,6 +96,30 @@ ticket with `select: false`, so they are never returned by the attendee list,
 search or CSV export; only the scan that needs the comparison asks for one.
 Tickets with no photo are admitted as normal.
 
+**Roles, approval and moderation**
+
+Four roles — `admin`, `organizer`, `operator`, `attendee` — all enforced on the
+server. Choosing a role at signup has never granted one: registration always
+produces an organiser scoped to its own events, and administrators are created
+only by `npm run make-admin -w server`, which needs shell access.
+
+What approval gates is **public reach, not the account**. A new organiser can
+create events, import attendees, issue tickets and run the scanner from the
+moment they sign up — everything works privately. Publishing is what waits: an
+event cannot leave `draft`, and its registration page does not exist, until a
+human vouches for the account. Signups from a domain listed in
+`INSTITUTION_EMAIL_DOMAINS` skip the queue, which is how a college's own
+students and clubs onboard themselves without an administrator in the loop.
+
+Suspension ends the session on the next request, drops every published event
+back to draft, and takes the public pages down immediately — the public route
+checks the owner's standing, so nothing has to be unpublished one by one.
+Reinstating restores access but deliberately does **not** republish: someone
+decides that again, on purpose. Suspending and unpublishing both require a
+written reason, and those writes are awaited rather than fire-and-forget, so an
+action is on the record before the response says it happened. Administrators
+read the whole audit trail; organisers see only their own events.
+
 **Attendee accounts and device unlock**
 
 Attendees sign in at `/my` with a six-digit code emailed to them — no
@@ -293,6 +317,7 @@ Copy `.env.example` to `.env`. Never commit `.env`.
 | `OTP_DEV_ECHO` | no | Returns the sign-in code in the API response. **Development only** |
 | `WEBAUTHN_RP_ID` | for passkeys | The site's domain exactly, e.g. `gateguard.example.com` |
 | `WEBAUTHN_ORIGIN` | for passkeys | Full origin, e.g. `https://gateguard.example.com` |
+| `INSTITUTION_EMAIL_DOMAINS` | no | Domains approved on sight, comma separated. Empty means every signup waits |
 
 ### Database setup
 
@@ -325,6 +350,7 @@ network access, and paste the connection string into `MONGODB_URI`.
 | `npm run lint` | ESLint, zero warnings allowed |
 | `npm run seed` | Demo data (`-- --reset` wipes it first) |
 | `npm run backfill -w server` | One-time: gives pre-existing tickets a state. Idempotent |
+| `npm run make-admin -w server -- <email> [password]` | The only way to create an administrator |
 
 ## Testing
 

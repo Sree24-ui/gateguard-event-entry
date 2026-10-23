@@ -13,7 +13,10 @@ export default defineConfig({
       RATE_LIMIT_DISABLED: '1',
       OTP_DEV_ECHO: '1',
       WEBAUTHN_RP_ID: 'localhost',
-      WEBAUTHN_ORIGIN: 'http://localhost:5173'
+      WEBAUTHN_ORIGIN: 'http://localhost:5173',
+      // Helper signups use @test.dev, so they take the institutional path and
+      // land approved. Tests that need a pending organiser use another domain.
+      INSTITUTION_EMAIL_DOMAINS: 'test.dev'
     },
     globalSetup: './test/global-setup.js',
     setupFiles: ['./test/setup.js'],

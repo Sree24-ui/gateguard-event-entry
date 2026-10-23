@@ -7,6 +7,7 @@ import { requireAuth, issueSession, clearSession } from '../middleware/auth.js';
 import { wrap, conflict, unauthorized } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { createLimiter } from '../lib/rateLimit.js';
+import { env } from '../config/env.js';
 
 const router = express.Router();
 
@@ -35,15 +36,27 @@ router.post(
     const { name, email, password } = req.body;
     if (await User.exists({ email })) throw conflict('That email already has an account');
 
+    // Picking a role at signup has never granted anything here, and now the
+    // account cannot reach the public until a human approves it — unless the
+    // email is on a domain the institution has already vouched for.
+    const domain = email.split('@')[1] ?? '';
+    const institutional = env.institutionDomains.includes(domain);
+
     const user = await User.create({
       name,
       email,
       passwordHash: await bcrypt.hash(password, 12),
-      role: 'organizer'
+      role: 'organizer',
+      status: institutional ? 'approved' : 'pending',
+      approvedAt: institutional ? new Date() : null
     });
 
     issueSession(res, user);
-    audit({ actor: user, action: 'auth.register', summary: `${email} created an organizer account` });
+    audit({
+      actor: user,
+      action: 'auth.register',
+      summary: `${email} created an organizer account (${user.status})`
+    });
     res.status(201).json({ user: user.toPublic() });
   })
 );

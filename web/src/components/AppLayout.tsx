@@ -1,15 +1,26 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutGrid, ScanLine, Users, History, LogOut, Menu, X, WifiOff } from 'lucide-react';
+import {
+  LayoutGrid, ScanLine, Users, History, LogOut, Menu, X, WifiOff, ShieldCheck
+} from 'lucide-react';
 import { Wordmark } from './Brand';
 import { useAuth } from '../hooks/useAuth';
 import { useOnline } from '../hooks/useOnline';
 
+// Who sees what. The same list the routes enforce, so the nav can never
+// offer a page that then bounces you.
 const NAV = [
-  { to: '/app', label: 'Events', icon: LayoutGrid, end: true, organizerOnly: false },
-  { to: '/app/scan', label: 'Scan', icon: ScanLine, end: false, organizerOnly: false },
-  { to: '/app/team', label: 'Team', icon: Users, end: false, organizerOnly: true },
-  { to: '/app/activity', label: 'Activity', icon: History, end: false, organizerOnly: true }
+  { to: '/app/admin', label: 'Admin', icon: ShieldCheck, end: false, roles: ['admin'] },
+  { to: '/app', label: 'Events', icon: LayoutGrid, end: true, roles: ['organizer', 'operator'] },
+  { to: '/app/scan', label: 'Scan', icon: ScanLine, end: false, roles: ['organizer', 'operator'] },
+  { to: '/app/team', label: 'Team', icon: Users, end: false, roles: ['organizer'] },
+  {
+    to: '/app/activity',
+    label: 'Activity',
+    icon: History,
+    end: false,
+    roles: ['organizer', 'admin']
+  }
 ];
 
 export function AppLayout() {
@@ -18,7 +29,7 @@ export function AppLayout() {
   const online = useOnline();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const links = NAV.filter((item) => !item.organizerOnly || user?.role === 'organizer');
+  const links = NAV.filter((item) => !!user && item.roles.includes(user.role));
 
   async function handleSignOut() {
     await signOut();

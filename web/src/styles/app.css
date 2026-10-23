@@ -188,3 +188,19 @@
    are ignored and the bar renders as an empty outline. */
 .hbar__fill { display: block; height: 100%; background: var(--carbon); }
 .hbar__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-sm); text-align: right; }
+
+/* An account that cannot yet publish should be told why, not left guessing. */
+.pending-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  border: 1px solid var(--amber);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+.pending-note svg { flex-shrink: 0; margin-top: 1px; }
+.pending-note b { color: var(--ink); }

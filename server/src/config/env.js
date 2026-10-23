@@ -40,7 +40,13 @@ function readEnv() {
     rpOrigin: process.env.WEBAUTHN_ORIGIN || 'http://localhost:5173',
     // Echoes the one-time code in the API response for local development,
     // where no email provider is configured. Never enable in production.
-    otpDevEcho: process.env.OTP_DEV_ECHO === '1'
+    otpDevEcho: process.env.OTP_DEV_ECHO === '1',
+    // Signups from these domains are approved on sight. Everyone else waits
+    // for an administrator.
+    institutionDomains: (process.env.INSTITUTION_EMAIL_DOMAINS || '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase().replace(/^@/, ''))
+      .filter(Boolean)
   };
 }
 

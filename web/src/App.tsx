@@ -20,6 +20,7 @@ import { TicketPage } from './pages/TicketPage';
 import { PublicRegisterPage } from './pages/PublicRegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
+import { AdminPage } from './pages/AdminPage';
 import { PageLoader } from './components/PageLoader';
 
 // The QR decoder is ~600kB and only the scanner needs it, so it stays out of
@@ -78,15 +79,23 @@ export default function App() {
                   <Route
                     path="/app/team"
                     element={
-                      <ProtectedRoute organizerOnly>
+                      <ProtectedRoute roles={['organizer']}>
                         <TeamPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/app/admin"
+                    element={
+                      <ProtectedRoute roles={['admin']}>
+                        <AdminPage />
                       </ProtectedRoute>
                     }
                   />
                   <Route
                     path="/app/activity"
                     element={
-                      <ProtectedRoute organizerOnly>
+                      <ProtectedRoute roles={['organizer', 'admin']}>
                         <ActivityPage />
                       </ProtectedRoute>
                     }

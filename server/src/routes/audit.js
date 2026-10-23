@@ -6,12 +6,20 @@ import { wrap } from '../lib/errors.js';
 
 const router = express.Router();
 
-router.use(requireAuth, requireRole('organizer'));
+router.use(requireAuth, requireRole('organizer', 'admin'));
 
 router.get(
   '/',
   wrap(async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
+
+    // An administrator investigating abuse needs the whole trail, not a slice
+    // of it scoped to events they happen to own.
+    if (req.user.role === 'admin') {
+      const entries = await AuditLog.find({}).sort({ createdAt: -1 }).limit(limit);
+      return res.json({ entries: entries.map((entry) => entry.toPublic()) });
+    }
+
     const ownEvents = await Event.find({ organizer: req.user._id }).select('_id');
     const eventIds = ownEvents.map((event) => event._id);
 

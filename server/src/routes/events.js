@@ -4,12 +4,31 @@ import { Event } from '../models/Event.js';
 import { Ticket } from '../models/Ticket.js';
 import { ScanLog } from '../models/ScanLog.js';
 import { validate } from '../middleware/validate.js';
-import { requireAuth, requireRole, loadEvent, requireEventOwner } from '../middleware/auth.js';
+import {
+  requireAuth,
+  requireRole,
+  loadEvent,
+  requireEventOwner
+} from '../middleware/auth.js';
 import { wrap, badRequest } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { getEventStats, getEventAnalytics } from '../services/stats.js';
 import { offlineHash } from '../lib/tickets.js';
 import { toCsv, sendCsv } from '../lib/csv.js';
+import { forbidden } from '../lib/errors.js';
+
+/**
+ * Anything other than draft is visible to the public, so it needs an approved
+ * account behind it. Enforced here rather than by hiding the control.
+ */
+function assertMayPublish(user, status) {
+  if (status && status !== 'draft' && (user.status || 'approved') !== 'approved') {
+    throw forbidden(
+      'Your organiser account is awaiting approval. You can build the event and add ' +
+        'attendees now, but it cannot be published until an administrator approves you.'
+    );
+  }
+}
 
 const router = express.Router();
 
@@ -79,6 +98,7 @@ router.post(
   requireRole('organizer'),
   validate(createEventBody),
   wrap(async (req, res) => {
+    assertMayPublish(req.user, req.body.status);
     const event = await Event.create({ ...req.body, organizer: req.user._id });
     audit({
       actor: req.user,
@@ -109,6 +129,7 @@ router.patch(
   requireEventOwner,
   validate(updateEventBody),
   wrap(async (req, res) => {
+    assertMayPublish(req.user, req.body.status);
     Object.assign(req.event, req.body);
     if (req.event.endsAt <= req.event.startsAt) {
       throw badRequest('Some fields need attention', [

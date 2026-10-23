@@ -44,6 +44,13 @@ export async function requireAuth(req, res, next) {
     }
     const user = await User.findById(payload.sub);
     if (!user) throw unauthorized('Account no longer exists');
+    if (user.status === 'suspended') {
+      throw forbidden(
+        user.suspendedReason
+          ? `This account is suspended: ${user.suspendedReason}`
+          : 'This account is suspended. Contact the organising committee.'
+      );
+    }
     req.user = user;
     next();
   } catch (err) {
@@ -86,6 +93,19 @@ export async function loadEvent(req, res, next) {
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Blocks the actions that give an account public reach until a human has
+ * approved it. Checked on the server; hiding the button is not a control.
+ */
+export function requireApproved(req, res, next) {
+  if ((req.user?.status || 'approved') !== 'approved') {
+    return next(
+      forbidden('Your organiser account is awaiting approval, so it cannot publish events yet')
+    );
+  }
+  next();
 }
 
 /** Organizer-only operations on an already loaded event. */

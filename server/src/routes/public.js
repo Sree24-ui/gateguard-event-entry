@@ -33,8 +33,11 @@ const ticketLookupLimiter = createLimiter({
 
 async function loadOpenEvent(eventId) {
   if (!/^[a-f0-9]{24}$/i.test(eventId || '')) throw notFound('Event not found');
-  const event = await Event.findById(eventId);
+  const event = await Event.findById(eventId).populate('organizer', 'status');
   if (!event || event.status === 'draft') throw notFound('Event not found');
+  // Belt and braces: an account suspended after publishing loses its public
+  // pages immediately, without anyone having to unpublish each event.
+  if ((event.organizer?.status || 'approved') !== 'approved') throw notFound('Event not found');
   return event;
 }
 
