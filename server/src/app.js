@@ -12,6 +12,7 @@ import checkinRoutes from './routes/checkin.js';
 import publicRoutes from './routes/public.js';
 import operatorRoutes from './routes/operators.js';
 import auditRoutes from './routes/audit.js';
+import attendeeRoutes from './routes/attendee.js';
 
 export function createApp() {
   const app = express();
@@ -69,6 +70,7 @@ export function createApp() {
 
   app.use('/api/auth', authRoutes);
   app.use('/api/public', publicRoutes);
+  app.use('/api/attendee', attendeeRoutes);
   app.use('/api/operators', operatorRoutes);
   app.use('/api/audit', auditRoutes);
   app.use('/api/events/:eventId/tickets', ticketRoutes);

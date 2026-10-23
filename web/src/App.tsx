@@ -19,6 +19,7 @@ import { ActivityPage } from './pages/ActivityPage';
 import { TicketPage } from './pages/TicketPage';
 import { PublicRegisterPage } from './pages/PublicRegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { MyTicketsPage } from './pages/MyTicketsPage';
 import { PageLoader } from './components/PageLoader';
 
 // The QR decoder is ~600kB and only the scanner needs it, so it stays out of
@@ -52,6 +53,7 @@ export default function App() {
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/e/:eventId" element={<PublicRegisterPage />} />
                 <Route path="/t/:code" element={<TicketPage />} />
+                <Route path="/my" element={<MyTicketsPage />} />
 
                 <Route
                   element={

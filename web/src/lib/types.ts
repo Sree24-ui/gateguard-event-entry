@@ -1,4 +1,4 @@
-export type Role = 'organizer' | 'operator';
+export type Role = 'organizer' | 'operator' | 'attendee';
 
 export interface User {
   id: string;
@@ -6,6 +6,7 @@ export interface User {
   email: string;
   role: Role;
   assignedEvents: string[];
+  hasPasskey: boolean;
   createdAt: string;
 }
 

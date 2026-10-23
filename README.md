@@ -96,6 +96,23 @@ ticket with `select: false`, so they are never returned by the attendee list,
 search or CSV export; only the scan that needs the comparison asks for one.
 Tickets with no photo are admitted as normal.
 
+**Attendee accounts and device unlock**
+
+Attendees sign in at `/my` with a six-digit code emailed to them — no
+password, because a throwaway college account does not need one and a
+password database is a liability. The code is stored bcrypt-hashed, expires in
+ten minutes, is single use, and stops accepting guesses after five wrong
+attempts. Signing in is also signing up: an attendee is only ever identified by
+an email that already appears on their tickets, so `/api/attendee/tickets`
+returns every pass issued to that address across every event.
+
+After that, a **passkey** takes over. WebAuthn with a platform authenticator
+and `userVerification: 'required'` means the device checks the face,
+fingerprint or screen lock **itself** and returns a signature. No biometric is
+collected, transmitted or stored here — the server holds a public key and a
+signature counter, nothing more. The relying-party domain comes from
+configuration, never the `Host` header, which a caller controls.
+
 **Rotating codes**
 
 The pass shows a code that changes every 30 seconds (`GG2:<eventId>:<code>:<step>:<sig>`,
@@ -273,6 +290,9 @@ Copy `.env.example` to `.env`. Never commit `.env`.
 | `PORT` | no | Local API port, default 4000 |
 | `CORS_ORIGINS` | no | Extra browser origins. Empty for the same-origin deployment |
 | `DEMO_PASSWORD` | no | Password the seed script uses |
+| `OTP_DEV_ECHO` | no | Returns the sign-in code in the API response. **Development only** |
+| `WEBAUTHN_RP_ID` | for passkeys | The site's domain exactly, e.g. `gateguard.example.com` |
+| `WEBAUTHN_ORIGIN` | for passkeys | Full origin, e.g. `https://gateguard.example.com` |
 
 ### Database setup
 
@@ -354,6 +374,19 @@ the API returned, role-restricted navigation for an operator, and both viewport
 sizes.
 
 **Not covered by automated tests**
+
+- **The WebAuthn round trip.** Registration and authentication options,
+  challenge persistence, the no-passkey case and rejection of a response that
+  does not match the stored challenge are all tested. Completing a real
+  ceremony needs a genuine platform authenticator, which a headless browser
+  cannot provide — the signature verification itself is
+  `@simplewebauthn/server`'s, pinned to `requireUserVerification: true` and an
+  expected origin and RP ID. Enrolling and unlocking on a real phone remains an
+  outstanding manual check.
+- **Email delivery.** No provider is wired up. The sign-in code is written to
+  the server log and, with `OTP_DEV_ECHO=1`, returned in the response for local
+  development. **A real attendee cannot sign in until an email transport is
+  configured** — see Required configuration.
 
 - Optical decoding through a physical camera. The decode path is a
   `@zxing/browser` callback; everything downstream of it is tested with

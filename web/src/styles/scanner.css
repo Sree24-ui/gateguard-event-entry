@@ -347,3 +347,13 @@
   font-size: var(--text-sm);
   color: var(--on-carbon-2);
 }
+
+/* Ticket rows carry icon + text metadata that must stay on one line. */
+.pick-row .meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.pick-row .meta svg { flex-shrink: 0; }

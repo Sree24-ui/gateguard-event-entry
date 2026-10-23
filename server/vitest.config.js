@@ -10,7 +10,10 @@ export default defineConfig({
       JWT_SECRET: 'test-only-jwt-secret-not-used-anywhere-real',
       TICKET_SECRET: 'test-only-ticket-secret-not-used-anywhere-real',
       MONGODB_URI: 'mongodb://127.0.0.1:27017/gateguard_test_placeholder',
-      RATE_LIMIT_DISABLED: '1'
+      RATE_LIMIT_DISABLED: '1',
+      OTP_DEV_ECHO: '1',
+      WEBAUTHN_RP_ID: 'localhost',
+      WEBAUTHN_ORIGIN: 'http://localhost:5173'
     },
     globalSetup: './test/global-setup.js',
     setupFiles: ['./test/setup.js'],

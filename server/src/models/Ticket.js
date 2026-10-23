@@ -60,6 +60,8 @@ const ticketSchema = new mongoose.Schema(
 ticketSchema.index({ event: 1, 'attendee.email': 1 }, { unique: true });
 ticketSchema.index({ event: 1, checkedInAt: 1 });
 ticketSchema.index({ event: 1, state: 1 });
+// An attendee's tickets across every event.
+ticketSchema.index({ 'attendee.email': 1, createdAt: -1 });
 ticketSchema.index({ event: 1, createdAt: -1 });
 
 ticketSchema.methods.toPublic = function toPublic() {

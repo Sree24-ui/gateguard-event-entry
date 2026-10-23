@@ -33,7 +33,14 @@ function readEnv() {
     corsOrigins: (process.env.CORS_ORIGINS || '')
       .split(',')
       .map((value) => value.trim())
-      .filter(Boolean)
+      .filter(Boolean),
+    // WebAuthn relying party. Must match the site's domain exactly; taking it
+    // from the Host header would let an attacker choose it.
+    rpId: process.env.WEBAUTHN_RP_ID || 'localhost',
+    rpOrigin: process.env.WEBAUTHN_ORIGIN || 'http://localhost:5173',
+    // Echoes the one-time code in the API response for local development,
+    // where no email provider is configured. Never enable in production.
+    otpDevEcho: process.env.OTP_DEV_ECHO === '1'
   };
 }
 
