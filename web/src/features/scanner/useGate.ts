@@ -37,7 +37,7 @@ const SAME_CODE_COOLDOWN_MS = 4000;
 /** Never fire two lookups back to back, whatever is in frame. */
 const ANY_SCAN_COOLDOWN_MS = 900;
 
-export type Verdict = 'admit' | 'reject' | 'pending' | 'review';
+export type Verdict = 'admit' | 'reject' | 'pending' | 'review' | 'exit';
 
 export interface GateResult {
   id: string;
@@ -63,7 +63,10 @@ const SERVER_COPY: Record<ScanOutcome, { verdict: Verdict; word: string }> = {
   unknown: { verdict: 'reject', word: 'Unknown' },
   cancelled: { verdict: 'reject', word: 'Cancelled' },
   face_review: { verdict: 'review', word: 'Check face' },
-  face_rejected: { verdict: 'reject', word: 'Not them' }
+  face_rejected: { verdict: 'reject', word: 'Not them' },
+  re_entered: { verdict: 'admit', word: 'Back in' },
+  checked_out: { verdict: 'exit', word: 'Exit' },
+  invalid_exit: { verdict: 'reject', word: 'Not inside' }
 };
 
 /**
@@ -76,6 +79,7 @@ function copyFor(outcome: ScanOutcome) {
 }
 
 function describe(result: ScanResult) {
+  if (result.why) return result.why;
   if (result.outcome === 'duplicate' || result.outcome === 'conflict') {
     const at = result.firstCheckIn?.at ? new Date(result.firstCheckIn.at) : null;
     const gate = result.firstCheckIn?.gate;
@@ -90,11 +94,12 @@ function describe(result: ScanResult) {
 interface Options {
   eventId: string;
   gate: string;
+  direction: 'entry' | 'exit';
   online: boolean;
   onStats: (stats: EventStats) => void;
 }
 
-export function useGate({ eventId, gate, online, onStats }: Options) {
+export function useGate({ eventId, gate, direction, online, onStats }: Options) {
   const [result, setResult] = useState<GateResult | null>(null);
   const [history, setHistory] = useState<GateResult[]>([]);
   const [queued, setQueued] = useState<QueuedScan[]>([]);
@@ -107,6 +112,8 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
   const lastScanAtRef = useRef(0);
   const gateRef = useRef(gate);
   gateRef.current = gate;
+  const directionRef = useRef(direction);
+  directionRef.current = direction;
 
   const refreshQueue = useCallback(async () => {
     setQueued(await listQueue(eventId));
@@ -163,6 +170,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
           scanId: scan.scanId,
           gate: scan.gate,
           entry: scan.entry,
+          direction: scan.direction,
           scannedAt: scan.scannedAt
         }))
       };
@@ -232,6 +240,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
         payload,
         gate: gateRef.current,
         entry,
+        direction: directionRef.current,
         scannedAt: new Date().toISOString(),
         attempts: 0,
         localVerdict: 'provisional'
@@ -273,7 +282,13 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
           try {
             const response = await api.post<{ result: ScanResult; stats: EventStats }>(
               `/events/${eventId}/checkin`,
-              { payload: raw, scanId: newScanId(), gate: gateRef.current, entry }
+              {
+                payload: raw,
+                scanId: newScanId(),
+                gate: gateRef.current,
+                entry,
+                direction: directionRef.current
+              }
             );
             onStats(response.stats);
             const copy = copyFor(response.result.outcome);
@@ -390,6 +405,7 @@ export function useGate({ eventId, gate, online, onStats }: Options) {
           scanId: newScanId(),
           gate: gateRef.current,
           entry: 'camera',
+          direction: directionRef.current,
           faceConfirmed: true
         }
       );

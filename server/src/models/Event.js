@@ -25,6 +25,11 @@ const eventSchema = new mongoose.Schema(
     // When on, a scanned ticket is held for the operator to compare the
     // attendee against the photo taken at registration before admitting.
     faceCheck: { type: Boolean, default: false },
+    // Whether someone who has left may come back in on the same ticket.
+    reEntry: { type: Boolean, default: false },
+    // Safe occupancy for the venue. Distinct from `capacity`, which caps how
+    // many tickets exist. 0 falls back to capacity.
+    occupancyLimit: { type: Number, min: 0, default: 0 },
     isDemo: { type: Boolean, default: false }
   },
   { timestamps: true }
@@ -45,6 +50,8 @@ eventSchema.methods.toPublic = function toPublic() {
     gates: this.gates,
     publicRegistration: this.publicRegistration,
     faceCheck: this.faceCheck,
+    reEntry: this.reEntry,
+    occupancyLimit: this.occupancyLimit,
     isDemo: this.isDemo,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt

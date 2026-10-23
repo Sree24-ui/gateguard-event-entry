@@ -18,6 +18,11 @@ export interface EventStats {
   cancelled: number;
   conflicts: number;
   attendancePct: number;
+  inside: number;
+  exited: number;
+  occupancyLimit: number;
+  occupancyPct: number;
+  exitsRecorded: boolean;
   lastCheckInAt: string | null;
   lastCheckInName: string | null;
   asOf: string;
@@ -35,6 +40,8 @@ export interface GateEvent {
   gates: string[];
   publicRegistration: boolean;
   faceCheck: boolean;
+  reEntry: boolean;
+  occupancyLimit: number;
   isDemo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -74,7 +81,10 @@ export type ScanOutcome =
   | 'unknown'
   | 'cancelled'
   | 'face_review'
-  | 'face_rejected';
+  | 'face_rejected'
+  | 're_entered'
+  | 'checked_out'
+  | 'invalid_exit';
 
 export interface ScanResult {
   ok: boolean;
@@ -90,6 +100,8 @@ export interface ScanResult {
   /** Present only on a face_review result, for the operator to compare. */
   photo?: string;
   photoCapturedAt?: string | null;
+  why?: string;
+  entryCount?: number;
 }
 
 export interface ScanLogEntry {
@@ -97,6 +109,7 @@ export interface ScanLogEntry {
   scanId: string;
   outcome: ScanOutcome;
   mode: 'online' | 'offline_sync';
+  direction: 'entry' | 'exit';
   entry: 'camera' | 'manual' | 'api';
   gate: string;
   operatorName: string;

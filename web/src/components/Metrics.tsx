@@ -30,6 +30,20 @@ export function Metrics({ stats, compact = false }: { stats?: EventStats; compac
       />
       <Metric label="Remaining" value={stats.remaining} />
       <Metric label="Attendance" value={stats.attendancePct} suffix="%" />
+      {(stats.exitsRecorded || stats.occupancyLimit > 0) && (
+        <Metric
+          label="Inside now"
+          value={stats.inside}
+          sub={
+            stats.exitsRecorded
+              ? stats.occupancyLimit
+                ? `of ${stats.occupancyLimit} safe limit`
+                : 'recorded'
+              : 'no exits scanned yet'
+          }
+          warn={stats.occupancyLimit > 0 && stats.occupancyPct >= 85}
+        />
+      )}
       {!compact && stats.conflicts > 0 && (
         <Metric label="Conflicts" value={stats.conflicts} sub="offline scans to review" warn />
       )}

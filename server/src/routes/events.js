@@ -27,7 +27,9 @@ const fields = {
   status: z.enum(['draft', 'published', 'live', 'closed']),
   gates: z.array(z.string().trim().min(1).max(60)).min(1).max(20),
   publicRegistration: z.boolean(),
-  faceCheck: z.boolean()
+  faceCheck: z.boolean(),
+  reEntry: z.boolean(),
+  occupancyLimit: z.coerce.number().int().min(0).max(1000000)
 };
 
 // Defaults belong to creation only.
@@ -39,7 +41,9 @@ const createShape = z.object({
   status: fields.status.default('draft'),
   gates: fields.gates.default(['Main Gate']),
   publicRegistration: fields.publicRegistration.default(true),
-  faceCheck: fields.faceCheck.default(false)
+  faceCheck: fields.faceCheck.default(false),
+  reEntry: fields.reEntry.default(false),
+  occupancyLimit: fields.occupancyLimit.default(0)
 });
 
 const updateShape = z.object(fields).partial();
@@ -84,7 +88,7 @@ router.post(
       targetId: event._id,
       summary: `Created event "${event.name}"`
     });
-    res.status(201).json({ event: { ...event.toPublic(), stats: await getEventStats(event._id) } });
+    res.status(201).json({ event: { ...event.toPublic(), stats: await getEventStats(event._id, event) } });
   })
 );
 
@@ -93,7 +97,7 @@ router.get(
   loadEvent,
   wrap(async (req, res) => {
     res.json({
-      event: { ...req.event.toPublic(), stats: await getEventStats(req.event._id) },
+      event: { ...req.event.toPublic(), stats: await getEventStats(req.event._id, req.event) },
       role: req.isEventOwner ? 'organizer' : 'operator'
     });
   })
@@ -120,7 +124,7 @@ router.patch(
       targetId: req.event._id,
       summary: `Updated event "${req.event.name}"`
     });
-    res.json({ event: { ...req.event.toPublic(), stats: await getEventStats(req.event._id) } });
+    res.json({ event: { ...req.event.toPublic(), stats: await getEventStats(req.event._id, req.event) } });
   })
 );
 
@@ -161,7 +165,7 @@ router.get(
   '/:eventId/stats',
   loadEvent,
   wrap(async (req, res) => {
-    res.json({ stats: await getEventStats(req.event._id) });
+    res.json({ stats: await getEventStats(req.event._id, req.event) });
   })
 );
 
@@ -171,7 +175,7 @@ router.get(
   wrap(async (req, res) => {
     const bucketMinutes = Math.min(Math.max(Number(req.query.bucket) || 15, 5), 120);
     res.json({
-      stats: await getEventStats(req.event._id),
+      stats: await getEventStats(req.event._id, req.event),
       analytics: await getEventAnalytics(req.event._id, { bucketMinutes })
     });
   })

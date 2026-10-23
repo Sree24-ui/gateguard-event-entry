@@ -29,6 +29,18 @@ const ticketSchema = new mongoose.Schema(
       enum: ['organizer', 'public', 'import', 'demo'],
       default: 'organizer'
     },
+    // Where the ticket holder is now. `checkedInAt` stays as the FIRST entry
+    // time so existing stats, exports and the attendee pass keep working.
+    state: {
+      type: String,
+      enum: ['issued', 'inside', 'outside'],
+      default: 'issued',
+      index: true
+    },
+    entryCount: { type: Number, default: 0 },
+    exitCount: { type: Number, default: 0 },
+    lastExitAt: { type: Date, default: null },
+    lastExitGate: { type: String, default: null },
     checkedInAt: { type: Date, default: null },
     checkedInBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     checkedInGate: { type: String, default: null },
@@ -44,6 +56,7 @@ const ticketSchema = new mongoose.Schema(
 // One registration per email per event.
 ticketSchema.index({ event: 1, 'attendee.email': 1 }, { unique: true });
 ticketSchema.index({ event: 1, checkedInAt: 1 });
+ticketSchema.index({ event: 1, state: 1 });
 ticketSchema.index({ event: 1, createdAt: -1 });
 
 ticketSchema.methods.toPublic = function toPublic() {
@@ -59,6 +72,10 @@ ticketSchema.methods.toPublic = function toPublic() {
     },
     status: this.status,
     source: this.source,
+    state: this.state,
+    entryCount: this.entryCount,
+    exitCount: this.exitCount,
+    lastExitAt: this.lastExitAt,
     checkedInAt: this.checkedInAt,
     checkedInGate: this.checkedInGate,
     conflictCount: this.conflictCount,

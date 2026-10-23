@@ -57,7 +57,7 @@ function setup(online = true, handler: Handler = () => ({ status: 200, body: { r
   vi.stubGlobal('fetch', fetchSpy);
   const onStats = vi.fn();
   const hook = renderHook(() =>
-    useGate({ eventId: EVENT, gate: 'Main Gate', online, onStats })
+    useGate({ eventId: EVENT, gate: 'Main Gate', direction: 'entry', online, onStats })
   );
   return { hook, fetchSpy, onStats };
 }
@@ -198,6 +198,30 @@ describe('useGate face check', () => {
   });
 });
 
+describe('useGate direction', () => {
+  it('sends the scanner direction with every scan', async () => {
+    const fetchSpy = mockFetch(() => ({
+      status: 200,
+      body: {
+        result: { ok: true, outcome: 'checked_out', message: 'Exited', attendeeName: 'Neel Rao' },
+        stats: STATS
+      }
+    }));
+    vi.stubGlobal('fetch', fetchSpy);
+    const hook = renderHook(() =>
+      useGate({ eventId: EVENT, gate: 'Main Gate', direction: 'exit', online: true, onStats: vi.fn() })
+    );
+
+    await act(async () => {
+      await hook.result.current.submit(payloadFor(newCode()), 'camera');
+    });
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body as string);
+    expect(body.direction).toBe('exit');
+    expect(hook.result.current.result).toMatchObject({ verdict: 'exit', word: 'Exit' });
+  });
+});
+
 describe('useGate offline', () => {
   it('queues a scan it cannot verify and labels it as awaiting the server', async () => {
     const { hook, fetchSpy } = setup(false);
@@ -261,7 +285,7 @@ describe('useGate offline', () => {
       })
     );
     const hook = renderHook(() =>
-      useGate({ eventId: EVENT, gate: 'Main Gate', online: true, onStats: vi.fn() })
+      useGate({ eventId: EVENT, gate: 'Main Gate', direction: 'entry', online: true, onStats: vi.fn() })
     );
 
     await act(async () => {

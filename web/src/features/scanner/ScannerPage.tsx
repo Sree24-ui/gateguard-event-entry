@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Camera, CameraOff, CheckCircle2, CloudOff, Keyboard, Loader2, RefreshCw,
-  ShieldX, Clock, Play, Square, Download, ScanFace, ThumbsUp, ThumbsDown
+  ShieldX, Clock, Play, Square, Download, ScanFace, ThumbsUp, ThumbsDown,
+  LogIn, LogOut, Users
 } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
 import type { EventStats, GateEvent } from '../../lib/types';
@@ -14,7 +15,13 @@ import { useCamera } from './useCamera';
 import { useGate, type GateResult } from './useGate';
 import { fmtTime } from '../../lib/format';
 
-const VERDICT_ICON = { admit: CheckCircle2, reject: ShieldX, pending: Clock, review: ScanFace };
+const VERDICT_ICON = {
+  admit: CheckCircle2,
+  reject: ShieldX,
+  pending: Clock,
+  review: ScanFace,
+  exit: LogOut
+};
 
 export function ScannerPage() {
   const { eventId = '' } = useParams();
@@ -25,6 +32,7 @@ export function ScannerPage() {
   const manualRef = useRef<HTMLInputElement>(null);
   const [manualCode, setManualCode] = useState('');
   const [gate, setGate] = useState('');
+  const [direction, setDirection] = useState<'entry' | 'exit'>('entry');
   const [stats, setStats] = useState<EventStats | undefined>();
 
   const { data, isLoading, error } = useQuery({
@@ -50,6 +58,7 @@ export function ScannerPage() {
   } = useGate({
     eventId,
     gate,
+    direction,
     online,
     onStats: handleStats
   });
@@ -114,15 +123,48 @@ export function ScannerPage() {
 
   const Icon = result ? VERDICT_ICON[result.verdict] : null;
 
+  // Capacity warning bands. "Recorded" because it is only as good as exit
+  // discipline — an unscanned exit leaves the number too high.
+  const occupancyTone =
+    stats?.occupancyLimit && stats.occupancyPct >= 100
+      ? 'is-over'
+      : stats?.occupancyLimit && stats.occupancyPct >= 85
+        ? 'is-near'
+        : '';
+
   return (
-    <div className="scanner">
+    <div className={`scanner ${direction === 'exit' ? 'scanner--exit' : ''}`}>
       {/* Bar and verdict stick together, so the last result stays on screen
           whatever the operator has scrolled to and whatever the bar wraps to. */}
       <div className="scanner__head">
+      {direction === 'exit' && (
+        <div className="exit-banner" role="status">
+          <LogOut size={14} aria-hidden /> Exit mode — scans record people leaving
+        </div>
+      )}
       <div className="scanner__bar">
         <div className="scanner__event grow">
           <span className="stamp stamp--on-carbon">Gate scanner</span>
           <b className="truncate">{eventName}</b>
+        </div>
+
+        <div className="dirswitch" role="group" aria-label="Scanner direction">
+          <button
+            type="button"
+            className="dirswitch__btn"
+            aria-pressed={direction === 'entry'}
+            onClick={() => setDirection('entry')}
+          >
+            <LogIn size={14} aria-hidden /> Entry
+          </button>
+          <button
+            type="button"
+            className="dirswitch__btn"
+            aria-pressed={direction === 'exit'}
+            onClick={() => setDirection('exit')}
+          >
+            <LogOut size={14} aria-hidden /> Exit
+          </button>
         </div>
 
         <label className="sr-only" htmlFor="gate-select">
@@ -186,7 +228,9 @@ export function ScannerPage() {
           <div>
             <div className="stamp stamp--on-carbon">Ready</div>
             <p style={{ marginTop: 'var(--s2)', fontSize: 'var(--text-sm)' }}>
-              Start the camera and hold a ticket QR inside the frame.
+              {direction === 'exit'
+                ? 'Scan a ticket as the person leaves.'
+                : 'Start the camera and hold a ticket QR inside the frame.'}
             </p>
           </div>
         )}
@@ -349,6 +393,18 @@ export function ScannerPage() {
       </form>
 
       <div className="scanner__count">
+        <div className={occupancyTone}>
+          <span className="stamp">
+            <Users size={11} aria-hidden style={{ display: 'inline', marginRight: 3 }} />
+            Inside now
+          </span>
+          <b>
+            {stats?.inside ?? '—'}
+            {!!stats?.occupancyLimit && (
+              <span className="scanner__limit"> / {stats.occupancyLimit}</span>
+            )}
+          </b>
+        </div>
         <div>
           <span className="stamp">Checked in</span>
           <b>{stats?.checkedIn ?? '—'}</b>
@@ -362,6 +418,13 @@ export function ScannerPage() {
           <b>{stats?.remaining ?? '—'}</b>
         </div>
       </div>
+
+      {stats && !!stats.occupancyLimit && !stats.exitsRecorded && (
+        <p className="occupancy-note">
+          No exits have been scanned yet, so “inside now” is the number admitted, not the
+          number still here.
+        </p>
+      )}
 
       <div className="scanner__recent">
         <span className="stamp stamp--on-carbon">Recent scans at this gate</span>

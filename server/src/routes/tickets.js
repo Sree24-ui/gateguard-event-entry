@@ -123,7 +123,7 @@ router.post(
     });
     res.status(201).json({
       ticket: ticketWithQr(ticket),
-      stats: await getEventStats(req.event._id)
+      stats: await getEventStats(req.event._id, req.event)
     });
   })
 );
@@ -157,7 +157,7 @@ router.post(
       created: created.length,
       skipped,
       tickets: created,
-      stats: await getEventStats(req.event._id)
+      stats: await getEventStats(req.event._id, req.event)
     });
   })
 );
@@ -204,7 +204,7 @@ router.post(
       targetId: ticket._id,
       summary: `Reissued the ticket for ${ticket.attendee.email}; the old QR no longer works`
     });
-    res.json({ ticket: ticketWithQr(ticket), stats: await getEventStats(req.event._id) });
+    res.json({ ticket: ticketWithQr(ticket), stats: await getEventStats(req.event._id, req.event) });
   })
 );
 
@@ -226,7 +226,7 @@ router.post(
       targetId: ticket._id,
       summary: `Cancelled the ticket for ${ticket.attendee.email}`
     });
-    res.json({ ticket: ticket.toPublic(), stats: await getEventStats(req.event._id) });
+    res.json({ ticket: ticket.toPublic(), stats: await getEventStats(req.event._id, req.event) });
   })
 );
 

@@ -39,6 +39,7 @@ const scanSchema = z.object({
   scanId: z.string().trim().min(8, 'A scan id is required').max(64),
   gate: z.string().trim().max(60).default('Main Gate'),
   entry: z.enum(['camera', 'manual', 'api']).default('camera'),
+  direction: z.enum(['entry', 'exit']).default('entry'),
   // Set by the operator after comparing the attendee with their photo.
   faceConfirmed: z.boolean().default(false),
   scannedAt
@@ -59,6 +60,7 @@ const batchSchema = z.object({
         scanId: z.string().trim().min(8).max(64),
         gate: z.string().trim().max(60).optional(),
         entry: z.enum(['camera', 'manual', 'api']).optional(),
+        direction: z.enum(['entry', 'exit']).optional(),
         scannedAt
       })
     )
@@ -83,7 +85,7 @@ router.post(
   validate(scanSchema),
   wrap(async (req, res) => {
     assertScannable(req.event);
-    const { payload, scanId, gate, entry, scannedAt, faceConfirmed } = req.body;
+    const { payload, scanId, gate, entry, scannedAt, faceConfirmed, direction } = req.body;
 
     const result = await processScan({
       eventId: req.event._id,
@@ -95,14 +97,16 @@ router.post(
       operator: operatorContext(req),
       scannedAt: scannedAt || new Date(),
       requireFace: req.event.faceCheck,
-      faceConfirmed
+      faceConfirmed,
+      direction,
+      allowReEntry: req.event.reEntry
     });
 
     // A face review is a pending step, not a refusal, so it is not a 409.
     const status = result.ok || result.outcome === 'face_review' ? 200 : 409;
     res.status(status).json({
       result,
-      stats: await getEventStats(req.event._id)
+      stats: await getEventStats(req.event._id, req.event)
     });
   })
 );
@@ -115,7 +119,8 @@ router.post(
     assertScannable(req.event);
     const { results, stats } = await processScanBatch(req.event._id, req.body.scans, {
       gate: req.body.gate,
-      operator: operatorContext(req)
+      operator: operatorContext(req),
+      allowReEntry: req.event.reEntry
     });
     res.json({ results, stats });
   })
@@ -132,9 +137,10 @@ router.post(
       code: req.body.code,
       scanId: req.body.scanId,
       gate: req.body.gate,
-      operator: operatorContext(req)
+      operator: operatorContext(req),
+      allowReEntry: req.event.reEntry
     });
-    res.json({ result, stats: await getEventStats(req.event._id) });
+    res.json({ result, stats: await getEventStats(req.event._id, req.event) });
   })
 );
 

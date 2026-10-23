@@ -10,7 +10,10 @@ export const SCAN_OUTCOMES = [
   'cancelled',
   'conflict',
   'face_review',
-  'face_rejected'
+  'face_rejected',
+  're_entered',
+  'checked_out',
+  'invalid_exit'
 ];
 
 /**
@@ -25,6 +28,7 @@ const scanLogSchema = new mongoose.Schema(
     scanId: { type: String, required: true, unique: true },
     outcome: { type: String, enum: SCAN_OUTCOMES, required: true, index: true },
     mode: { type: String, enum: ['online', 'offline_sync'], default: 'online' },
+  direction: { type: String, enum: ['entry', 'exit'], default: 'entry', index: true },
     entry: { type: String, enum: ['camera', 'manual', 'api'], default: 'camera' },
     gate: { type: String, default: 'Main Gate' },
     operator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
@@ -47,6 +51,7 @@ scanLogSchema.methods.toPublic = function toPublic() {
     scanId: this.scanId,
     outcome: this.outcome,
     mode: this.mode,
+    direction: this.direction,
     entry: this.entry,
     gate: this.gate,
     operatorName: this.operatorName,

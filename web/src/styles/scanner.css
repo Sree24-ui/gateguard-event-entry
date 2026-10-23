@@ -290,3 +290,60 @@
   .face-review { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .face-review__buttons { width: 100%; }
 }
+
+/* --- Entry / exit switch -------------------------------------------------
+   Scanning in the wrong mode corrupts the occupancy figure, so this control
+   is explicit, always visible, and the whole screen changes with it. */
+.dirswitch { display: flex; border: 1px solid var(--rule-carbon); }
+
+.dirswitch__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 var(--s3);
+  background: transparent;
+  border: 0;
+  color: var(--on-carbon-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dirswitch__btn + .dirswitch__btn { border-left: 1px solid var(--rule-carbon); }
+.dirswitch__btn[aria-pressed='true'] { background: var(--volt); color: var(--volt-ink); font-weight: 600; }
+.scanner--exit .dirswitch__btn[aria-pressed='true'] { background: var(--on-carbon); color: var(--carbon); }
+
+.exit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s4);
+  background: var(--on-carbon);
+  color: var(--carbon);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Exit is a success, but it must not look like an admit. */
+.verdict--exit { background: var(--on-carbon); color: var(--carbon); }
+
+/* --- Occupancy ------------------------------------------------------------ */
+.scanner__count { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.scanner__limit { font-size: 0.9rem; color: var(--on-carbon-2); letter-spacing: 0; }
+
+.scanner__count .is-near { background: #3a2f05; }
+.scanner__count .is-near b { color: #f0a830; }
+.scanner__count .is-over { background: #3d110c; }
+.scanner__count .is-over b { color: #ff6b5e; }
+
+.occupancy-note {
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule-carbon);
+  font-size: var(--text-sm);
+  color: var(--on-carbon-2);
+}

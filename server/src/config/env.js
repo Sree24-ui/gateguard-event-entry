@@ -1,6 +1,11 @@
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Resolve .env from the repository root, not the working directory, so a
+// script run from server/ finds the same file the server does.
+dotenv.config({
+  path: [fileURLToPath(new URL('../../../.env', import.meta.url)), '.env']
+});
 
 const required = ['MONGODB_URI', 'JWT_SECRET', 'TICKET_SECRET'];
 

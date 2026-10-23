@@ -24,7 +24,12 @@ const schema = z
     status: z.enum(['draft', 'published', 'live', 'closed']),
     gates: z.string().trim().min(1, 'Name at least one gate'),
     publicRegistration: z.boolean(),
-    faceCheck: z.boolean()
+    faceCheck: z.boolean(),
+    reEntry: z.boolean(),
+    occupancyLimit: z
+      .string()
+      .trim()
+      .regex(/^\d+$/, 'Use a whole number, or 0 to use capacity')
   })
   .refine((values) => new Date(values.endsAt) > new Date(values.startsAt), {
     message: 'The event must end after it starts',
@@ -66,7 +71,9 @@ export function EventFormPage() {
       status: existing?.status ?? 'published',
       gates: (existing?.gates ?? ['Main Gate']).join(', '),
       publicRegistration: existing?.publicRegistration ?? true,
-      faceCheck: existing?.faceCheck ?? false
+      faceCheck: existing?.faceCheck ?? false,
+      reEntry: existing?.reEntry ?? false,
+      occupancyLimit: String(existing?.occupancyLimit ?? 0)
     }
   });
 
@@ -75,6 +82,7 @@ export function EventFormPage() {
       const body = {
         ...values,
         capacity: Number(values.capacity),
+        occupancyLimit: Number(values.occupancyLimit),
         startsAt: new Date(values.startsAt).toISOString(),
         endsAt: new Date(values.endsAt).toISOString(),
         gates: values.gates.split(',').map((gate) => gate.trim()).filter(Boolean)
@@ -175,6 +183,32 @@ export function EventFormPage() {
             Allow anyone with the link to register
             <span className="field-hint" style={{ display: 'block' }}>
               Turn this off for invite-only events; you can still add attendees yourself.
+            </span>
+          </span>
+        </label>
+
+        <Field
+          label="Safe occupancy"
+          hint="How many people may be inside at once. 0 uses the ticket capacity. Only meaningful if your gates scan exits as well as entries."
+          error={errors.occupancyLimit?.message}
+          htmlFor="occupancyLimit"
+        >
+          <input
+            id="occupancyLimit"
+            className="input num"
+            type="number"
+            min={0}
+            {...register('occupancyLimit')}
+          />
+        </Field>
+
+        <label className="row" style={{ gap: 'var(--s3)', cursor: 'pointer' }}>
+          <input type="checkbox" {...register('reEntry')} />
+          <span>
+            Allow re-entry
+            <span className="field-hint" style={{ display: 'block' }}>
+              Someone who has been scanned out may come back in on the same ticket. With this
+              off, leaving is final.
             </span>
           </span>
         </label>

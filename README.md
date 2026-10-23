@@ -70,6 +70,9 @@ resolves, and a count the server owns.
 | `unknown` | **Unknown** | No such ticket in this event |
 | `cancelled` | **Cancelled** | The organizer revoked it |
 | `malformed` | **Not a ticket** | Not a GateGuard QR at all |
+| `re_entered` | **Back in** | Left earlier and the organizer allows re-entry |
+| `checked_out` | **Exit** | Scanned leaving; occupancy drops by one |
+| `invalid_exit` | **Not inside** | Exit scanned for someone never admitted, or already out |
 | `face_review` | **Check face** | Event has face check on — the photo is shown and the ticket is held, not consumed |
 | `face_rejected` | **Not them** | The operator said the face did not match; the ticket stays valid |
 
@@ -90,6 +93,25 @@ No biometric template is computed, stored or matched — see
 ticket with `select: false`, so they are never returned by the attendee list,
 search or CSV export; only the scan that needs the comparison asks for one.
 Tickets with no photo are admitted as normal.
+
+**Entry, exit and recorded occupancy**
+
+The scanner has an explicit Entry/Exit switch — the whole screen changes
+colour in exit mode, because scanning the wrong way corrupts the number. A
+ticket moves `issued → inside → outside`, each transition a conditional update
+on the state itself, so concurrent gates cannot both admit or both release the
+same person. Re-entry is an event setting: off means leaving is final; on means
+the ticket may come back and the outcome reads **Back in**, without counting
+the attendee twice.
+
+Occupancy is the count of tickets currently `inside`, shown against a safe
+occupancy limit (falling back to ticket capacity) with amber and red bands.
+
+It is labelled **recorded occupancy**, never "people inside", and the UI says
+so: a figure is only as good as exit discipline, and a gate that admits without
+scanning exits drifts high. The stats carry an `exitsRecorded` flag so the
+interface can tell you when nobody has scanned an exit yet and the number is
+really just "admitted so far".
 
 **Also built**
 
@@ -257,6 +279,7 @@ network access, and paste the connection string into `MONGODB_URI`.
 | `npm run test:server` / `npm run test:web` | Either suite |
 | `npm run lint` | ESLint, zero warnings allowed |
 | `npm run seed` | Demo data (`-- --reset` wipes it first) |
+| `npm run backfill -w server` | One-time: gives pre-existing tickets a state. Idempotent |
 
 ## Testing
 

@@ -7,6 +7,7 @@ export interface QueuedScan {
   payload: string;
   gate: string;
   entry: 'camera' | 'manual';
+  direction: 'entry' | 'exit';
   scannedAt: string;
   attempts: number;
   lastError?: string;
