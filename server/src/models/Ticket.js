@@ -38,6 +38,9 @@ const ticketSchema = new mongoose.Schema(
       index: true
     },
     entryCount: { type: Number, default: 0 },
+    // Highest rotating-code time step already redeemed. A code at or below
+    // this has been used, so presenting it again is a replay.
+    lastTokenCounter: { type: Number, default: 0 },
     exitCount: { type: Number, default: 0 },
     lastExitAt: { type: Date, default: null },
     lastExitGate: { type: String, default: null },

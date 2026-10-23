@@ -13,7 +13,9 @@ export const SCAN_OUTCOMES = [
   'face_rejected',
   're_entered',
   'checked_out',
-  'invalid_exit'
+  'invalid_exit',
+  'expired',
+  'replayed'
 ];
 
 /**

@@ -73,6 +73,8 @@ resolves, and a count the server owns.
 | `re_entered` | **Back in** | Left earlier and the organizer allows re-entry |
 | `checked_out` | **Exit** | Scanned leaving; occupancy drops by one |
 | `invalid_exit` | **Not inside** | Exit scanned for someone never admitted, or already out |
+| `expired` | **Expired** | A rotating code older than its 30-second window |
+| `replayed` | **Code used** | That exact rotating code has already been redeemed |
 | `face_review` | **Check face** | Event has face check on — the photo is shown and the ticket is held, not consumed |
 | `face_rejected` | **Not them** | The operator said the face did not match; the ticket stays valid |
 
@@ -93,6 +95,29 @@ No biometric template is computed, stored or matched — see
 ticket with `select: false`, so they are never returned by the attendee list,
 search or CSV export; only the scan that needs the comparison asks for one.
 Tickets with no photo are admitted as normal.
+
+**Rotating codes**
+
+The pass shows a code that changes every 30 seconds (`GG2:<eventId>:<code>:<step>:<sig>`,
+signed per time step with the same `TICKET_SECRET`). The gate accepts the
+current step and one either side, so a phone 30 seconds out of sync still
+works. Each code is **single use**: the ticket records the highest step it has
+redeemed, enforced inside the same conditional update that already makes
+check-in concurrency-safe, so a replay costs no extra query.
+
+A forwarded screenshot is dead within a minute. **This does not stop someone
+sharing their live screen** — only the person at the gate can judge that, which
+is what the photo check is for.
+
+The static `GG1:` code still works and is what download, print and the offline
+queue use: a rotating code saved to a file would be dead before anyone scanned
+it. Queued offline scans are exempt from replay protection, since their codes
+are minutes old by the time they sync and `scanId` already dedupes them.
+
+Two consequences worth knowing: scanning the same person in and out inside one
+30-second window needs a fresh code (or the manual code field, which carries no
+step), and the pass stops issuing codes while you are recorded inside, handing
+one back only if the event allows re-entry.
 
 **Entry, exit and recorded occupancy**
 

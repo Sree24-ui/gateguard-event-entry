@@ -24,13 +24,20 @@ describe('parseScanPayload', () => {
       ok: true,
       code,
       eventId: EVENT,
-      signed: true
+      signed: true,
+      rotating: false
     });
   });
 
   it('accepts a bare code as manual entry', () => {
     const code = newCode();
-    expect(parseScanPayload(` ${code} `)).toEqual({ ok: true, code, eventId: null, signed: false });
+    expect(parseScanPayload(` ${code} `)).toEqual({
+      ok: true,
+      code,
+      eventId: null,
+      signed: false,
+      rotating: false
+    });
   });
 
   it('rejects anything that is not a GateGuard ticket', () => {
@@ -52,6 +59,52 @@ describe('parseScanPayload', () => {
     const forged = `GG1:${EVENT}:${code}:${'x'.repeat(24)}`;
     // The device cannot tell; it reports structure only and lets the server decide.
     expect(parseScanPayload(forged)).toMatchObject({ ok: true, signed: true });
+  });
+});
+
+describe('rotating codes on the device', () => {
+  function rotating(eventId: string, code: string, counter: number) {
+    const sig = createHmac('sha256', SECRET)
+      .update(`${eventId}:${code}:${counter}`)
+      .digest('base64url')
+      .slice(0, 24);
+    return `GG2:${eventId}:${code}:${counter}:${sig}`;
+  }
+
+  it('reads the ticket out of a rotating code', () => {
+    const code = newCode();
+    expect(parseScanPayload(rotating(EVENT, code, 58_000_000))).toEqual({
+      ok: true,
+      code,
+      eventId: EVENT,
+      signed: true,
+      rotating: true
+    });
+  });
+
+  it('does not judge expiry on the device — only the server knows', () => {
+    const code = newCode();
+    // A counter from years ago still parses; the server is what refuses it.
+    expect(parseScanPayload(rotating(EVENT, code, 1))).toMatchObject({ ok: true, rotating: true });
+  });
+
+  it('rejects a malformed rotating code', () => {
+    const code = newCode();
+    for (const input of [
+      `GG2:${EVENT}:${code}:notanumber:sig`,
+      `GG2:${EVENT}:${code}:123`,
+      `GG2:short:${code}:123:sig`
+    ]) {
+      expect(parseScanPayload(input), input).toEqual({ ok: false, reason: 'malformed' });
+    }
+  });
+
+  it('still reads the static code, which is what offline and print use', () => {
+    const code = newCode();
+    expect(parseScanPayload(serverPayload(EVENT, code))).toMatchObject({
+      ok: true,
+      rotating: false
+    });
   });
 });
 

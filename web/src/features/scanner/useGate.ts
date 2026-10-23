@@ -66,7 +66,9 @@ const SERVER_COPY: Record<ScanOutcome, { verdict: Verdict; word: string }> = {
   face_rejected: { verdict: 'reject', word: 'Not them' },
   re_entered: { verdict: 'admit', word: 'Back in' },
   checked_out: { verdict: 'exit', word: 'Exit' },
-  invalid_exit: { verdict: 'reject', word: 'Not inside' }
+  invalid_exit: { verdict: 'reject', word: 'Not inside' },
+  expired: { verdict: 'reject', word: 'Expired' },
+  replayed: { verdict: 'reject', word: 'Code used' }
 };
 
 /**

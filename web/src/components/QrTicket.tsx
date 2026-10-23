@@ -7,11 +7,15 @@ export function QrTicket({
   payload,
   code,
   fileName,
+  staticPayload,
   size = 208
 }: {
   payload: string;
   code: string;
   fileName: string;
+  /** The durable code. A downloaded or printed rotating code would be dead
+   *  within 30 seconds, so the file always carries this one. */
+  staticPayload?: string;
   size?: number;
 }) {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -32,7 +36,7 @@ export function QrTicket({
         <span className="stamp">Ticket {code.slice(0, 6)}…</span>
       </div>
       <div ref={canvasRef} style={{ display: 'none' }} aria-hidden>
-        <QRCodeCanvas value={payload} size={760} level="M" marginSize={2} />
+        <QRCodeCanvas value={staticPayload ?? payload} size={760} level="M" marginSize={2} />
       </div>
       <div className="pass__actions print-hide">
         <button type="button" className="btn" onClick={download}>

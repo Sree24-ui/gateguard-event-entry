@@ -16,7 +16,9 @@ const MESSAGES = {
   face_rejected: 'Operator reported the face did not match',
   re_entered: 'Re-entry allowed',
   checked_out: 'Exited',
-  invalid_exit: 'Cannot exit — not recorded as inside'
+  invalid_exit: 'Cannot exit — not recorded as inside',
+  expired: 'That code has expired — ask for a fresh one',
+  replayed: 'That code was already used — ask for a fresh one'
 };
 
 const OK_OUTCOMES = new Set(['checked_in', 're_entered', 'checked_out']);
@@ -129,11 +131,27 @@ export async function processScan({
   // ticket. Both the review and the operator's verdict are logged.
   const state = ticket.state || (ticket.checkedInAt ? 'inside' : 'issued');
 
+  const enforceToken = parsed.rotating && mode !== 'offline_sync';
+  if (enforceToken && (ticket.lastTokenCounter || 0) >= parsed.counter) {
+    return finish(
+      'replayed',
+      { attendeeName: ticket.attendee.name },
+      { ticket, attendeeName: ticket.attendee.name }
+    );
+  }
+  // $not rather than $lt: a ticket issued before this field existed has no
+  // lastTokenCounter at all, and { $lt: n } does not match a missing field —
+  // which silently made every older ticket unscannable.
+  const tokenGuard = enforceToken
+    ? { lastTokenCounter: { $not: { $gte: parsed.counter } } }
+    : {};
+  const tokenBurn = enforceToken ? { lastTokenCounter: parsed.counter } : {};
+
   if (direction === 'exit') {
     const exited = await Ticket.findOneAndUpdate(
-      { _id: ticket._id, status: 'valid', state: 'inside' },
+      { _id: ticket._id, status: 'valid', state: 'inside', ...tokenGuard },
       {
-        $set: { state: 'outside', lastExitAt: scannedAt, lastExitGate: gate },
+        $set: { state: 'outside', lastExitAt: scannedAt, lastExitGate: gate, ...tokenBurn },
         $inc: { exitCount: 1 }
       },
       { new: true }
@@ -178,10 +196,16 @@ export async function processScan({
   // admit the same person.
   const reEntering = state === 'outside' && allowReEntry;
   const claimed = await Ticket.findOneAndUpdate(
-    { _id: ticket._id, status: 'valid', state: reEntering ? 'outside' : 'issued' },
+    {
+      _id: ticket._id,
+      status: 'valid',
+      state: reEntering ? 'outside' : 'issued',
+      ...tokenGuard
+    },
     {
       $set: {
         state: 'inside',
+        ...tokenBurn,
         checkedInBy: operator?.id ?? null,
         checkedInGate: gate,
         checkInScanId: scanId,

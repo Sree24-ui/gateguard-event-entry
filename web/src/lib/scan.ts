@@ -1,9 +1,10 @@
 import type { OfflineManifest } from './types';
 
 export const QR_PREFIX = 'GG1';
+export const QR_ROTATING_PREFIX = 'GG2';
 
 export type ParsedScan =
-  | { ok: true; code: string; eventId: string | null; signed: boolean }
+  | { ok: true; code: string; eventId: string | null; signed: boolean; rotating: boolean }
   | { ok: false; reason: 'malformed' };
 
 const CODE_RE = /^[A-Za-z0-9_-]{16,64}$/;
@@ -19,16 +20,29 @@ export function parseScanPayload(raw: string): ParsedScan {
 
   if (!input.includes(':')) {
     if (!CODE_RE.test(input)) return { ok: false, reason: 'malformed' };
-    return { ok: true, code: input, eventId: null, signed: false };
+    return { ok: true, code: input, eventId: null, signed: false, rotating: false };
   }
 
   const parts = input.split(':');
+  const prefix = parts[0];
+
+  // The rotating form carries a time step the device cannot check; only the
+  // server knows whether it is still live.
+  if (prefix === QR_ROTATING_PREFIX) {
+    if (parts.length !== 5) return { ok: false, reason: 'malformed' };
+    const [, rotEventId, rotCode, rotCounter] = parts;
+    if (!/^[a-f0-9]{24}$/i.test(rotEventId)) return { ok: false, reason: 'malformed' };
+    if (!CODE_RE.test(rotCode)) return { ok: false, reason: 'malformed' };
+    if (!/^\d{1,15}$/.test(rotCounter)) return { ok: false, reason: 'malformed' };
+    return { ok: true, code: rotCode, eventId: rotEventId, signed: true, rotating: true };
+  }
+
   if (parts.length !== 4) return { ok: false, reason: 'malformed' };
-  const [prefix, eventId, code] = parts;
+  const [, eventId, code] = parts;
   if (prefix !== QR_PREFIX) return { ok: false, reason: 'malformed' };
   if (!/^[a-f0-9]{24}$/i.test(eventId)) return { ok: false, reason: 'malformed' };
   if (!CODE_RE.test(code)) return { ok: false, reason: 'malformed' };
-  return { ok: true, code, eventId, signed: true };
+  return { ok: true, code, eventId, signed: true, rotating: false };
 }
 
 /** Must match the server's `offlineHash`: first 16 hex chars of SHA-256. */

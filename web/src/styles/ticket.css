@@ -82,3 +82,16 @@
 .public-head h1 { margin-block: var(--s3) var(--s2); }
 .public-facts { display: grid; gap: var(--s2); margin-top: var(--s3); }
 .public-facts div { display: flex; align-items: center; gap: var(--s2); font-size: var(--text-sm); color: var(--ink-2); }
+
+.pass__rotating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 var(--s4) var(--s4);
+  margin-top: calc(var(--s3) * -1);
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  text-align: center;
+}
+.pass__rotating.is-stale { color: var(--amber); }

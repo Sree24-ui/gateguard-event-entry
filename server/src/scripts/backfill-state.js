@@ -14,11 +14,11 @@ async function main() {
 
   const wasInside = await Ticket.updateMany(
     { state: { $exists: false }, checkedInAt: { $ne: null } },
-    { $set: { state: 'inside', entryCount: 1, exitCount: 0 } }
+    { $set: { state: 'inside', entryCount: 1, exitCount: 0, lastTokenCounter: 0 } }
   );
   const neverIn = await Ticket.updateMany(
     { state: { $exists: false } },
-    { $set: { state: 'issued', entryCount: 0, exitCount: 0 } }
+    { $set: { state: 'issued', entryCount: 0, exitCount: 0, lastTokenCounter: 0 } }
   );
 
   console.log(`[backfill] ${wasInside.modifiedCount} marked inside`);

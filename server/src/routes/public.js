@@ -4,7 +4,7 @@ import { Ticket } from '../models/Ticket.js';
 import { validate } from '../middleware/validate.js';
 import { wrap, notFound, badRequest } from '../lib/errors.js';
 import { issueTicket, ticketWithQr, attendeeSchema } from './tickets.js';
-import { buildQrPayload } from '../lib/tickets.js';
+import { buildQrPayload, buildRotatingPayload, currentCounter, TOKEN_STEP_MS } from '../lib/tickets.js';
 import { audit } from '../lib/audit.js';
 import { createLimiter } from '../lib/rateLimit.js';
 
@@ -17,6 +17,14 @@ const registerLimiter = createLimiter({
 });
 
 // Looking up a ticket means guessing a 128-bit code, but keep it bounded.
+// The pass refreshes every 30s while it is open, so this needs more headroom
+// than a one-off lookup.
+const tokenLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  limit: 400,
+  message: 'Too many refreshes. Reopen the ticket in a moment.'
+});
+
 const ticketLookupLimiter = createLimiter({
   windowMs: 10 * 60 * 1000,
   limit: 120,
@@ -89,16 +97,24 @@ router.get(
     const code = String(req.params.code || '');
     if (!/^[A-Za-z0-9_-]{16,64}$/.test(code)) throw notFound('Ticket not found');
 
-    const ticket = await Ticket.findOne({ code }).populate('event', 'name venue startsAt endsAt status');
+    const ticket = await Ticket.findOne({ code }).populate(
+      'event',
+      'name venue startsAt endsAt status reEntry'
+    );
     if (!ticket || !ticket.event) throw notFound('Ticket not found');
 
     res.set('Cache-Control', 'no-store');
     res.json({
       ticket: {
         code: ticket.code,
+        // Static form for printing and offline use, rotating form for the
+        // screen. The gate accepts either.
         qrPayload: buildQrPayload(ticket.event._id, ticket.code),
+        rotatingPayload: buildRotatingPayload(ticket.event._id, ticket.code),
+        tokenStepMs: TOKEN_STEP_MS,
         attendeeName: ticket.attendee.name,
         status: ticket.status,
+        state: ticket.state || (ticket.checkedInAt ? 'inside' : 'issued'),
         checkedInAt: ticket.checkedInAt,
         checkedInGate: ticket.checkedInGate,
         event: {
@@ -107,9 +123,37 @@ router.get(
           venue: ticket.event.venue,
           startsAt: ticket.event.startsAt,
           endsAt: ticket.event.endsAt,
-          status: ticket.event.status
+          status: ticket.event.status,
+          reEntry: ticket.event.reEntry
         }
       }
+    });
+  })
+);
+
+/**
+ * A fresh rotating code. The holder's own ticket code is the capability, so
+ * no session is needed — the same property the QR itself has.
+ */
+router.get(
+  '/tickets/:code/token',
+  tokenLimiter,
+  wrap(async (req, res) => {
+    const code = String(req.params.code || '');
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(code)) throw notFound('Ticket not found');
+
+    const ticket = await Ticket.findOne({ code }).select('code event status state');
+    if (!ticket) throw notFound('Ticket not found');
+    if (ticket.status !== 'valid') throw badRequest('That ticket is no longer valid');
+    if (ticket.state === 'inside') throw badRequest('You are already inside this event');
+
+    const counter = currentCounter();
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      payload: buildRotatingPayload(ticket.event, ticket.code, counter),
+      // When this code stops being accepted, so the page can refresh in time.
+      expiresAt: new Date((counter + 1) * TOKEN_STEP_MS),
+      stepMs: TOKEN_STEP_MS
     });
   })
 );
